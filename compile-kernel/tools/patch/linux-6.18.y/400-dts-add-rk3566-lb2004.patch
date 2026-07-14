@@ -677,12 +677,12 @@ diff -Nur a/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts b/arch/arm64/boot/dts
 +&pwm16_32k { status = "disabled"; };
 +
 +/* ADC keys */
-+&adc_keys {
++&adc-keys {
 +	status = "disabled";
 +};
 +
 +/* GPIO keys */
-+&gpio_keys {
++&gpio-keys {
 +	status = "disabled";
 +};
 +
