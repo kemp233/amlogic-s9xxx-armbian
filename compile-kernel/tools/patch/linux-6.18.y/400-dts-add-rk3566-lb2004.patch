@@ -587,16 +587,10 @@ diff -Nur a/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts b/arch/arm64/boot/dts
 +};
 +
 +/* NPU */
-+&npu {
-+	memory-region = <&rknpu>;
-+	status = "okay";
-+};
++/* &npu not in mainline, skipped */
 +
 +/* Bus NPU */
-+&bus_npu {
-+	rockchip,busfreq-policy = "clkfreq";
-+	status = "okay";
-+};
++/* &bus_npu not in mainline, skipped */
 +
 +/* PCIe */
 +&pcie2x1 {
@@ -606,14 +600,9 @@ diff -Nur a/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts b/arch/arm64/boot/dts
 +	status = "okay";
 +};
 +
-+&pcie30phy {
-+	status = "okay";
-+};
++/* &pcie30phy not in mainline, skipped */
 +
-+&pcie3x2 {
-+	phy-supply = <&pcie_pwr>;
-+	status = "okay";
-+};
++/* &pcie3x2 not in mainline, skipped */
 +
 +/* SATA */
 +&sata2 {
@@ -645,17 +634,7 @@ diff -Nur a/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts b/arch/arm64/boot/dts
 +};
 +
 +/* CAN */
-+&can0 {
-+	status = "disabled";
-+};
-+
-+&can1 {
-+	status = "disabled";
-+};
-+
-+&can2 {
-+	status = "disabled";
-+};
++/* &can0/&can1/&can2 not in mainline, skipped */
 +
 +/* PWM (all disabled in Android, keep as-is) */
 +&pwm0 { status = "disabled"; };
@@ -674,12 +653,10 @@ diff -Nur a/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts b/arch/arm64/boot/dts
 +&pwm13 { status = "disabled"; };
 +&pwm14 { status = "disabled"; };
 +&pwm15 { status = "disabled"; };
-+&pwm16_32k { status = "disabled"; };
++/* &pwm16_32k not in mainline, skipped */
 +
 +/* ADC keys */
-+&adc-keys {
-+	status = "disabled";
-+};
++/* &adc-keys not in mainline, skipped */
 +
 +/* GPIO keys */
 +&gpio-keys {
