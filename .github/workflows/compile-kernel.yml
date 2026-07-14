@@ -11,13 +11,14 @@ on:
   workflow_dispatch:
     inputs:
       kernel_source:
-        description: "Select the kernel source"
+        description: "Select the kernel source (owner/repo@branch)"
         required: false
         default: "unifreq"
         type: choice
         options:
           - unifreq
           - ophub
+          - armbian/linux-rockchip@rk-6.1-rkr6.1
       kernel_version:
         description: "Select kernel version"
         required: false
@@ -170,7 +171,14 @@ jobs:
         id: kernelhash
         run: |
           # Get the latest source hash from the kernel repository
-          api_url="https://api.github.com/repos/${{ inputs.kernel_source }}/linux-${{ matrix.kernel_version }}/git/ref/heads/main"
+          kernel_repo="${{ inputs.kernel_source }}"
+          # When kernel_source has repo/branch format, extract repo path
+          if [[ "${kernel_repo}" == *"@"* ]]; then
+            kernel_repo="${kernel_repo%%@*}"
+            api_url="https://api.github.com/repos/${kernel_repo}/git/ref/heads/${{ matrix.kernel_version }}"
+          else
+            api_url="https://api.github.com/repos/${kernel_repo}/linux-${{ matrix.kernel_version }}/git/ref/heads/main"
+          fi
           source_hash=$(curl -fsSL -m 20 \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
