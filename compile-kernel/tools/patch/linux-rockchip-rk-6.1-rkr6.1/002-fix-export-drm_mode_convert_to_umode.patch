@@ -1,0 +1,12 @@
+diff --git a/drivers/gpu/drm/drm_modes.c b/drivers/gpu/drm/drm_modes.c
+index 304004fb80aa..47c304869669 100644
+--- a/drivers/gpu/drm/drm_modes.c
++++ b/drivers/gpu/drm/drm_modes.c
+@@ -2012,6 +2012,7 @@ void drm_mode_convert_to_umode(struct drm_mode_modeinfo *out,
+ 	strncpy(out->name, in->name, DRM_DISPLAY_MODE_LEN);
+ 	out->name[DRM_DISPLAY_MODE_LEN-1] = 0;
+ }
++EXPORT_SYMBOL(drm_mode_convert_to_umode);
+ 
+ /**
+  * drm_mode_convert_umode - convert a modeinfo into a drm_display_mode
