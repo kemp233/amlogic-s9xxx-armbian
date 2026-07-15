@@ -1,0 +1,12 @@
+verbosity=1
+bootlogo=false
+fdtfile=rockchip/rk3566-lb2004.dtb
+rootdev=PARTUUID=614e0000-0000
+rootfstype=btrfs
+console=serial
+consoleargs=console=ttyFIQ0,1500000
+extraargs=rw rootwait
+extraboardargs=
+overlay_prefix=rk3566
+overlays=
+user_overlays=
