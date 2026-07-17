@@ -13,7 +13,7 @@ on:
       kernel_source:
         description: "Select the kernel source (owner/repo@branch)"
         required: false
-        default: "unifreq"
+        default: "kemp233/linux-rockchip@rk-6.1-rkr6.1"
         type: choice
         options:
           - unifreq
@@ -22,7 +22,7 @@ on:
       kernel_version:
         description: "Select kernel version"
         required: false
-        default: "6.18.y"
+        default: "6.1.y"
         type: choice
         options:
           - all
@@ -85,6 +85,14 @@ on:
         options:
           - -ophub
           - -yourname
+      config_flavor:
+        description: "Kernel config flavor (rk35xx for NPU support)"
+        required: false
+        default: "rk35xx"
+        type: choice
+        options:
+          - stable
+          - rk35xx
 
 env:
   TZ: Etc/UTC
@@ -208,6 +216,7 @@ jobs:
           kernel_source: ${{ inputs.kernel_source }}
           kernel_version: ${{ matrix.kernel_version }}
           kernel_auto: ${{ inputs.kernel_auto }}
+          config_flavor: ${{ inputs.config_flavor }}
           auto_patch: true
           delete_source: ${{ inputs.delete_source }}
           kernel_package: ${{ inputs.kernel_package }}
