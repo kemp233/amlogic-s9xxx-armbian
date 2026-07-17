@@ -1,0 +1,17 @@
+From: kemp233 <kemp233@users.noreply.github.com>
+Date: 2026-07-17
+Subject: [PATCH] fix libbpf resolve_btfids const qualifier warning on GCC 14
+
+GCC 14 treats discarded `const` qualifier as -Werror=discarded-qualifiers.
+Fix strchr return type to avoid build failure in tools/bpf/resolve_btfids.
+
+--- a/tools/bpf/resolve_btfids/libbpf.c
++++ b/tools/bpf/resolve_btfids/libbpf.c
+@@ -10743,7 +10743,7 @@ static char *resolve_full_path(const char *s)
+ 
+ 	/* check if we have /sys/module/name */
+ 	while (*s) {
+-		next_path = strchr(s, ':');
++		next_path = (char *)strchr(s, ':');
+ 		if (!next_path)
+ 			break;
