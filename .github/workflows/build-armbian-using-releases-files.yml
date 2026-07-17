@@ -23,7 +23,7 @@ on:
       armbian_board:
         description: "Select device board."
         required: false
-        default: "amlogic"
+        default: "lb2004"
         type: choice
         options:
           - allwinner
@@ -256,7 +256,7 @@ on:
       armbian_kernel:
         description: "Select kernel version."
         required: false
-        default: "6.12.y_6.18.y"
+        default: "6.1.y"
         type: choice
         options:
           - 5.10.y
@@ -278,7 +278,7 @@ on:
       kernel_repo:
         description: "Set the kernel repository."
         required: false
-        default: "ophub/kernel"
+        default: "kemp233/amlogic-s9xxx-armbian"
         type: choice
         options:
           - ophub/kernel
