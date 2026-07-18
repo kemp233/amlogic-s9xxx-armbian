@@ -312,7 +312,7 @@ on:
       builder_name:
         description: "Set Armbian builder signature."
         required: false
-        default: "ophub"
+        default: "kemp233"
         type: choice
         options:
           - ophub
