@@ -1,12 +1,9 @@
-verbosity=1
-bootlogo=false
-fdtfile=rockchip/rk3566-lb2004.dtb
-rootdev=PARTUUID=614e0000-0000
-rootfstype=btrfs
+verbosity=7
+earlycon=on
 console=serial
-consoleargs=console=ttyFIQ0,1500000
-extraargs=rw rootwait
-extraboardargs=
-overlay_prefix=rk3566
-overlays=
-user_overlays=
+rootdev=/dev/mmcblk0p2
+bootlogo=false
+rootfstype=ext4
+usbstoragequirks=0x2537:0x1066:u,0x2537:0x1068:u
+fdtfile=rk3566-lb2004.dtb
+overlay_prefix=rockchip
