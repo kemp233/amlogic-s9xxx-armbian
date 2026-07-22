@@ -472,7 +472,6 @@ jobs:
           kernel_usage: ${{ inputs.kernel_usage }}
           armbian_fstype: ${{ inputs.armbian_fstype }}
           builder_name: ${{ inputs.builder_name }}
-          config_board: ${{ inputs.armbian_board }}
 
       - name: Upload rebuilt images to Release
         uses: ophub/upload-to-releases@main
