@@ -6,7 +6,7 @@
 setenv load_addr "0x9000000"
 setenv overlay_error "false"
 # default values
-setenv rootdev "/dev/mmcblk0p1"
+setenv rootdev "/dev/mmcblk0p2"
 setenv rootfstype "ext4"
 setenv docker_optimizations "on"
 setenv earlycon "off"

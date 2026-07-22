@@ -980,7 +980,9 @@ refactor_bootfs() {
             -e "s|LABEL=ROOTFS|${uenv_rootdev}|g" \
             -e "s|meson.*.dtb|${FDTFILE}|g" \
             -e "s|sun.*.dtb|${FDTFILE}|g" \
-            -e "s|rk.*.dtb|${FDTFILE}|g" \
+            -e "s|rockchip/rk.*.dtb|${FDTFILE}|g" \
+            -e "s|meson.*.dtb|${FDTFILE}|g" \
+            -e "s|sun.*.dtb|${FDTFILE}|g" \
             "${uenv_conf_file}"
     }
 
