@@ -1,0 +1,43 @@
+build-armbian/armbian-files/platform-files/rockchip/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3399-king3399.dtb
+build-armbian/armbian-files/platform-files/amlogic/bootfs/emmc_autoscript.cmd:8:if fatload mmc 1 ${env_addr} uEnv.txt && env import -t ${env_addr} ${filesize}; setenv bootargs ${APPEND}; then if fatload mmc 1 ${kernel_addr} ${LINUX}; then if fatload mmc 1 ${initrd_addr} ${INITRD}; then if fatload mmc 1 ${dtb_addr} ${FDT}; then run addmac; run boot_start; fi; fi; fi; fi;
+build-armbian/armbian-files/platform-files/amlogic/bootfs/boot.ini:18:load ${devtype} ${devnum} ${dtb_addr} ${FDT}
+build-armbian/armbian-files/platform-files/amlogic/bootfs/uEnv.txt:3:FDT=/dtb/amlogic/meson-g12b-gtking-pro.dtb
+build-armbian/armbian-files/platform-files/amlogic/bootfs/boot-emmc.ini:19:load ${devtype} ${devnum} ${dtb_addr} ${FDT}
+build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install:243:        read -p "Please Input DTB Name(such as meson-xxx.dtb): " FDTFILE
+build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install:275:    [[ -n "${FDTFILE}" && -f "/boot/dtb/amlogic/${FDTFILE}" ]] || error_msg "DTB file [ ${FDTFILE} ] not found. Installation aborted!"
+build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install:415:    elif [[ "${FDTFILE}" == "meson-sm1-skyworth-lb2004-a4091.dtb" ]]; then
+build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install:496:        sed -i "s|meson.*.dtb|${FDTFILE}|g" ${uenv_conf_file}
+build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install:505:        sed -i "s|meson.*.dtb|${FDTFILE}|g" ${boot_extlinux_file}
+build-armbian/armbian-files/platform-files/allwinner/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/allwinner/sun50i-h6-tanix-tx6.dtb
+build-armbian/armbian-files/platform-files/allwinner/rootfs/usr/sbin/armbian-install:251:        sed -i "s|sun.*.dtb|${FDTFILE}|g" ${uenv_conf_file}
+build-armbian/armbian-files/platform-files/allwinner/rootfs/usr/sbin/armbian-install:272:        sed -i "s|sun.*.dtb|${FDTFILE}|g" ${boot_extlinux_file}
+build-armbian/armbian-files/different-files/a311d-oes/bootfs/uEnv.txt:3:FDT=/dtb/amlogic/meson-g12b-a311d-oes.dtb
+build-armbian/armbian-files/different-files/wxy-oect-mod/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3566-wxy-oec-turbo-4g.dtb
+build-armbian/armbian-files/different-files/s922x-oes-plus/bootfs/uEnv.txt:3:FDT=/dtb/amlogic/meson-g12b-s922x-oes-plus-00050000.dtb
+build-armbian/armbian-files/different-files/bdkj-bd-one/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3568-nsy-g68-plus.dtb
+build-armbian/armbian-files/different-files/firefly-rk3399/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3399-firefly.dtb
+build-armbian/armbian-files/different-files/gzpeite-p01/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3568-gzpeite.dtb
+build-armbian/armbian-files/different-files/bdy-g18-pro/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3568-bdy-g18-pro.dtb
+build-armbian/armbian-files/different-files/nsy-g68-plus/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3568-nsy-g68-plus.dtb
+build-armbian/armbian-files/different-files/nsy-g16-plus/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3568-nsy-g16-plus.dtb
+build-armbian/armbian-files/different-files/wxy-oect/bootfs/extlinux/extlinux.conf.bak:4:  FDT /dtb/rockchip/rk3566-wxy-oec-turbo-4g.dtb
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:38:# Search for the FDTFILE file (only the basename of the .dtb is needed)
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:41:# 1) /etc/ophub-release : FDTFILE='xxx.dtb'
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:44:# 2) /boot/uEnv.txt : FDT=/dtb/.../xxx.dtb  (or FDT=xxx.dtb)
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:46:    FDTFILE="$(grep -E '^FDT=.*\.dtb$' /boot/uEnv.txt 2>/dev/null | head -n1 | sed -E 's#^FDT=##; s#.*/##')"
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:49:    FDTFILE="$(grep -Eo '/dtb/[^[:space:]]+\.dtb' /boot/extlinux/extlinux.conf 2>/dev/null | head -n1 | sed -E 's#.*/##')"
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:52:    FDTFILE="$(grep -E '^fdtfile=.*\.dtb$' /boot/armbianEnv.txt 2>/dev/null | head -n1 | sed -E 's#^fdtfile=##; s#.*/##')"
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:68:# if [[ "${FDTFILE}" == "meson-sm1-skyworth-lb2004-a4091.dtb" ]]; then
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:74:# if [[ "${FDTFILE}" == "rk3568-swan1-w28.dtb" ]]; then
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:85:# if [[ "${FDTFILE}" == "rk3399-zysj.dtb" ]]; then
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:111:# if [[ "${FDTFILE}" =~ ^(rk3588-smart-am60\.dtb|rk3588s-orangepi-5b\.dtb)$ ]]; then
+build-armbian/armbian-files/common-files/etc/custom_service/start_service.sh:123:# if [[ "${FDTFILE}" =~ ^(rk3568-nsy-g16-plus\.dtb|rk3568-nsy-g68-plus\.dtb|rk3568-bdy-g18-pro\.dtb)$ ]]; then
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:160:    [[ -f "/boot/uEnv.txt" ]] && { FDTFILE="$(grep -E '^FDT=.*\.dtb$' /boot/uEnv.txt | sed -E 's#.*/##' || true)"; }
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:161:    [[ -z "${FDTFILE}" && -f "/boot/extlinux/extlinux.conf" ]] && { FDTFILE="$(grep -E '/dtb/.*\.dtb$' /boot/extlinux/extlinux.conf | sed -E 's#.*/##' || true)"; }
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:162:    [[ -z "${FDTFILE}" && -f "/boot/armbianEnv.txt" ]] && { FDTFILE="$(grep -E '^fdtfile=.*\.dtb$' /boot/armbianEnv.txt | sed -E 's#.*/##' || true)"; }
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:654:    [[ -f "/boot/dtb/${PLATFORM}/${FDTFILE}" ]] && {
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:655:        cp -f /boot/dtb/${PLATFORM}/${FDTFILE} ${backup_path}/dtb/
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:657:        echo -e "${INFO} DTB file backed up to [ ${backup_path}/dtb/${FDTFILE} ]."
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:663:    if [[ -f "${backup_path}/dtb/${FDTFILE}" && ! -f "/boot/dtb/${PLATFORM}/${FDTFILE}" ]]; then
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:664:        cp -f ${backup_path}/dtb/${FDTFILE} /boot/dtb/${PLATFORM}/
+build-armbian/armbian-files/common-files/usr/sbin/armbian-update:667:    elif [[ -f "/boot/dtb/${PLATFORM}/${FDTFILE}" ]]; then
