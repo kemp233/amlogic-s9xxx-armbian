@@ -221,8 +221,6 @@ diff -Nur a/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts b/arch/arm64/boot/dts
 +	snps,reset-gpio = <&gpio4 RK_PA3 GPIO_ACTIVE_LOW>;
 +	snps,reset-active-low;
 +	snps,reset-delays-us = <0 20000 100000>;
-+	snps,reset-delays-us = <0 20000 100000>;
-+	snps,reset-delays-us = <0 20000 100000>;
 +
 +	tx_delay = <0x4f>;
 +	rx_delay = <0x2d>;

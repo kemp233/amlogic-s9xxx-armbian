@@ -333,6 +333,25 @@ runs:
             echo -e "PACKAGED_STATUS: success"
             echo -e "PACKAGED_OUTPUTPATH files list: \n$(ls -lh ${PWD}/${kernel_outpath}/ 2>/dev/null)"
 
+            # Auto-sync compiled DTB back to platform-files for rebuild
+            echo -e "Syncing custom DTBs to platform-files..."
+            dtb_src="compile-kernel/kernel/linux-*/arch/arm64/boot/dts/rockchip"
+            dtb_dest="build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip"
+            if ls ${dtb_src}/rk3566-lb2004.dtb 1>/dev/null 2>&1; then
+                cp -vf ${dtb_src}/rk3566-lb2004.dtb ${dtb_dest}/rk3566-lb2004.dtb
+                echo -e "Updated: ${dtb_dest}/rk3566-lb2004.dtb"
+            fi
+            git config user.email "actions@github.com"
+            git config user.name "GitHub Actions"
+            if git diff --quiet; then
+                echo -e "No platform-files changes to commit."
+            else
+                git add -A
+                git commit -m "auto: sync compiled DTB to platform-files [${output_tags}]"
+                git push
+                echo -e "Pushed compiled DTB to platform-files."
+            fi
+
         else
             echo -e "Please select a build target: armbian / kernel"
             exit 1
