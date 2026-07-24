@@ -341,15 +341,21 @@ runs:
                 cp -vf ${dtb_src}/rk3566-lb2004.dtb ${dtb_dest}/rk3566-lb2004.dtb
                 echo -e "Updated: ${dtb_dest}/rk3566-lb2004.dtb"
             fi
-            git config user.email "actions@github.com"
-            git config user.name "GitHub Actions"
-            if git diff --quiet; then
-                echo -e "No platform-files changes to commit."
+            # Sync DTBs back to git repo if available
+            cd ${{ github.action_path }}
+            if [ -d .git ] || git rev-parse --git-dir 2>/dev/null; then
+                git config user.email "actions@github.com"
+                git config user.name "GitHub Actions"
+                if git diff --quiet; then
+                    echo -e "No platform-files changes to commit."
+                else
+                    git add -A
+                    git commit -m "auto: sync compiled DTB to platform-files [${output_tags}]"
+                    git push
+                    echo -e "Pushed compiled DTB to platform-files."
+                fi
             else
-                git add -A
-                git commit -m "auto: sync compiled DTB to platform-files [${output_tags}]"
-                git push
-                echo -e "Pushed compiled DTB to platform-files."
+                echo -e "Not in a git directory. Skipping DTB sync commit/push."
             fi
 
         else
