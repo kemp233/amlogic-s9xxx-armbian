@@ -1,0 +1,17 @@
+verbosity=7
+bootlogo=false
+console=serial
+consoleargs=console=ttyS2,1500000
+fdtfile=rockchip/dahua_rk3568.dtb
+rootdev=/dev/mmcblk1p2
+rootfstype=ext4
+rootflags=rw,errors=remount-ro
+earlycon=on
+earlyconargs=earlycon=uart8250,mmio32,0xfe660000
+overlay_prefix=rk3568
+overlays=
+user_overlays=
+extraargs=rw rootwait
+extraboardargs=net.ifnames=0 max_loop=128
+docker_optimizations=on
+usbstoragequirks=0x2537:0x1066:u,0x2537:0x1068:u

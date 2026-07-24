@@ -802,6 +802,8 @@ make_image() {
         bootloader_path="${uboot_path}/${PLATFORM}/${board}"
         # LB2004 uses MD1000's bootloader (MD1000 idbloader works on LB2004 hardware, lb2004 idbloader does not)
         [[ "${board}" == "lb2004" ]] && bootloader_path="${uboot_path}/${PLATFORM}/md1000"
+        # Dahua-asi8212a uses swan1-w28 bootloader (same RK3568 DDR4 platform, no dedicated u-boot yet)
+        [[ "${board}" == "dahua-asi8212a" ]] && bootloader_path="${uboot_path}/${PLATFORM}/swan1-w28"
         if [[ -n "${BOOTLOADER_IMG}" && -f "${bootloader_path}/${BOOTLOADER_IMG}" ]] &&
             [[ -n "${MAINLINE_UBOOT}" && -f "${bootloader_path}/${MAINLINE_UBOOT}" ]] &&
             [[ -n "${TRUST_IMG}" && -f "${bootloader_path}/${TRUST_IMG}" ]]; then

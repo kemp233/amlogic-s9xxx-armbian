@@ -1,0 +1,12 @@
+# /etc/balance_irq
+# eth0 rx
+eth0-0	2
+# eth0 tx-0
+eth0-16	1
+# eth0 tx-1
+eth0-18	1
+# wifi
+wl*		3
+# usb
+xhci-hcd:usb2	4
+xhci-hcd:usb3	4
