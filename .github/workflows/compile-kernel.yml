@@ -49,6 +49,11 @@ on:
         options:
           - all
           - dtbs
+      auto_patch:
+        description: "Apply custom kernel patches"
+        required: false
+        default: true
+        type: boolean
       kernel_toolchain:
         description: "Select the compilation toolchain"
         required: false
@@ -199,6 +204,7 @@ jobs:
           kernel_auto: ${{ inputs.kernel_auto }}
           delete_source: ${{ inputs.delete_source }}
           kernel_package: ${{ inputs.kernel_package }}
+          auto_patch: ${{ inputs.auto_patch }}
           kernel_sign: ${{ inputs.kernel_sign }}
           kernel_toolchain: ${{ inputs.kernel_toolchain }}
           ccache_clear: ${{ inputs.ccache_clear }}
