@@ -195,6 +195,7 @@ jobs:
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }} ]
+        id: compile
         uses: kemp233/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
         with:
@@ -210,6 +211,54 @@ jobs:
           ccache_clear: ${{ inputs.ccache_clear }}
           docker_hostpath: /builder
           docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
+
+      - name: Output Debug Logs on Failure
+        if: failure()
+        run: |
+          echo "🔍 正在查找内核编译日志..."
+          echo "========================================"
+          
+          # 在 /builder 目录下查找所有 .log 文件
+          echo "1. 查找 /builder 目录下的日志文件:"
+          find /builder -name "*.log" -type f 2>/dev/null | while read logfile; do
+            echo "\n--- LOG FILE: $logfile ---"
+            tail -n 200 "$logfile" || echo "无法读取日志文件"
+          done
+          
+          # 查找常见的 Armbian 日志路径
+          echo "\n2. 检查 Armbian 常见日志路径:"
+          for logpath in \
+            "build/output/debug/output.log" \
+            "build/output/debug/error.log" \
+            "build/output/kernel.log" \
+            "build/output/compile.log" \
+            "build/output/build.log" \
+            "build/output/*.log"
+          do
+            if [ -f "/builder/$logpath" ]; then
+              echo "\n--- $logpath ---"
+              tail -n 300 "/builder/$logpath"
+            fi
+          done
+          
+          # 查找内核源码目录下的日志
+          echo "\n3. 查找内核源码目录下的日志:"
+          find /builder/linux-* -name "*.log" -type f 2>/dev/null | head -20 | while read logfile; do
+            echo "\n--- $logfile ---"
+            tail -n 100 "$logfile" || echo "无法读取日志文件"
+          done
+          
+          # 查找所有包含 'error' 的日志文件
+          echo "\n4. 查找包含 'error' 的日志内容:"
+          find /builder -name "*.log" -type f 2>/dev/null | while read logfile; do
+            if grep -qi "error" "$logfile" 2>/dev/null; then
+              echo "\n--- $logfile (包含 error) ---"
+              grep -i "error" "$logfile" | tail -n 50
+            fi
+          done
+          
+          echo "\n========================================"
+          echo "日志查找完成"
 
       - name: Upload Kernel to Release
         uses: ophub/upload-to-releases@main
