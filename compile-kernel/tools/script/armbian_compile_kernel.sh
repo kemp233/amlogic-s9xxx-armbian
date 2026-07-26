@@ -459,6 +459,15 @@ apply_patch() {
             patch -p1 <"${file}" || echo -e "${WARNING} Failed to apply the patch, skipping."
         done
         rm -f *.patch
+
+        # DIAGNOSTIC: Copy .dts source files to kernel tree (non-patchable format)
+        if [[ -d "${kernel_patch_path}/${local_kernel_path}" ]]; then
+            for f in "${kernel_patch_path}"/${local_kernel_path}/*.dts; do
+                if [[ -f "${f}" ]]; then
+                    cp -vf "${f}" -t "${kernel_path}/${local_kernel_path}/arch/arm64/boot/dts/rockchip/" 2>/dev/null || true
+                fi
+            done
+        fi
     else
         echo -e "${INFO} No [ ${local_kernel_path} ] version dedicated kernel patches found, skipping."
     fi
