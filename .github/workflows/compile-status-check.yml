@@ -1,0 +1,65 @@
+name: Compile Status Check
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches: [main, master]
+
+env:
+  OWNER: kemp233
+  REPO: amlogic-s9xxx-armbian
+  WORKFLOW_NAME: compile-kernel.yml
+
+jobs:
+  check-build-status:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get latest workflow run
+        id: get-run
+        run: |
+          echo "获取最新的编译工作流运行状态..."
+          LATEST_RUN=$(gh run list --workflow="${{ env.WORKFLOW_NAME }}" --limit=1 --json status,conclusion,headBranch,displayTitle --jq '.[0]')
+
+          echo "run=${LATEST_RUN}" >> $GITHUB_OUTPUT
+          echo "status=$(echo "$LATEST_RUN" | jq -r '.status')" >> $GITHUB_OUTPUT
+          echo "conclusion=$(echo "$LATEST_RUN" | jq -r '.conclusion // "null")' >> $GITHUB_OUTPUT
+          echo "display_title=$(echo "$LATEST_RUN" | jq -r '.displayTitle')" >> $GITHUB_OUTPUT
+
+      - name: Check build status
+        if: steps.get-run.outputs.conclusion == 'failure'
+        run: |
+          echo "❌ 编译失败！"
+          echo "工作流: ${{ steps.get-run.outputs.display_title }}"
+          echo "状态: ${{ steps.get-run.outputs.conclusion }}"
+
+          # 创建 GitHub issue 通知
+          gh issue create \
+            --title "🔴 编译失败 - ${{ steps.get-run.outputs.display_title }}" \
+            --body "编译工作流运行失败。\n\n**工作流**: ${{ steps.get-run.outputs.display_title }}\n**状态**: ${{ steps.get-run.outputs.conclusion }}\n**分支**: ${{ steps.get-run.outputs.headBranch }}\n\n[查看运行详情](https://github.com/${{ env.OWNER }}/${{ env.REPO }}/actions/runs/${{ github.run_id }})" \
+            --label "bug" \
+            --label "automated-notification" \
+            --label "high-priority" \
+            --assignee ${{ github.actor }}
+
+      - name: Success or pending
+        if: steps.get-run.outputs.conclusion != 'failure'
+        run: |
+          if [ "${{ steps.get-run.outputs.conclusion }}" == "success" ]; then
+            echo "✅ 编译成功！"
+          else
+            echo "⏳ 编译正在进行中或未找到运行"
+          fi
+
+      - name: Log run details
+        run: |
+          echo "=== 编译状态详情 ==="
+          echo "最新运行: ${{ steps.get-run.outputs.display_title }}"
+          echo "状态: ${{ steps.get-run.outputs.status }}"
+          echo "结论: ${{ steps.get-run.outputs.conclusion }}"
+          echo "分支: ${{ steps.get-run.outputs.headBranch }}"
