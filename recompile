@@ -169,8 +169,8 @@ configure_and_compile() {
     [[ -d "${kernel_patch_path}" ]] && docker cp ${kernel_patch_path}/. "${docker_container}":/opt/kernel/compile-kernel/tools/patch/
     docker exec -i "${docker_container}" ls -Alh /opt/kernel/compile-kernel/tools/patch/ || true
 
-    echo -e "${INFO} Pre-copying .dts source files to kernel tree for non-patchable targets..."
-    docker exec -i "${docker_container}" bash -c 'for dir in /opt/kernel/compile-kernel/tools/patch/*/; do kernel_ver=$(basename "$dir"); dts_dest="/opt/kernel/compile-kernel/kernel/$kernel_ver/arch/arm64/boot/dts/rockchip/"; echo "Scanning $dir for .dts files..."; find "$dir" -maxdepth 1 -name "*.dts" -type f | while read f; do cp -vf "$f" -t "$dts_dest" || true; done; done'
+    echo -e "${INFO} Starting background DTS file monitor..."
+    docker exec -d "${docker_container}" bash -c 'LOG=/tmp/dts-copy.log; echo "[$(date +%s)] Monitor started" > "$LOG"; for i in $(seq 1 60); do for d in /opt/kernel/compile-kernel/kernel/*/; do dst="$d/arch/arm64/boot/dts/rockchip/"; if [ -d "$dst" ]; then for f in /opt/kernel/compile-kernel/tools/patch/*/*.dts; do [ -f "$f" ] && cp -vf "$f" -t "$dst" >> "$LOG" 2>&1; done; echo "[$(date +%s)] DTS copy done" >> "$LOG"; exit 0; fi; done; sleep 2; done; echo "[$(date +%s)] TIMEOUT" >> "$LOG"; exit 1'
 
     echo -e "${INFO} Compiling the kernel inside the Docker container..."
     docker exec -i "${docker_container}" bash "${docker_script}" "${@}"
