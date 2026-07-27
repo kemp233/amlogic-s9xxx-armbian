@@ -169,6 +169,9 @@ configure_and_compile() {
     [[ -d "${kernel_patch_path}" ]] && docker cp ${kernel_patch_path}/. "${docker_container}":/opt/kernel/compile-kernel/tools/patch/
     docker exec -i "${docker_container}" ls -Alh /opt/kernel/compile-kernel/tools/patch/ || true
 
+    echo -e "${INFO} Pre-copying .dts source files to kernel tree for non-patchable targets..."
+    docker exec -i "${docker_container}" bash -c 'for dir in /opt/kernel/compile-kernel/tools/patch/*/; do kernel_ver=$(basename "$dir"); for f in "$dir"*.dts; do [ -f "$f" ] && cp -vf "$f" -t "/opt/kernel/compile-kernel/kernel/$kernel_ver/arch/arm64/boot/dts/rockchip/" 2>/dev/null || true; done; done'
+
     echo -e "${INFO} Compiling the kernel inside the Docker container..."
     docker exec -i "${docker_container}" bash "${docker_script}" "${@}"
 }

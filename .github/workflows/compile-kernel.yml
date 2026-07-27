@@ -196,7 +196,7 @@ jobs:
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }} ]
         id: compile
-        uses: kemp233/amlogic-s9xxx-armbian@9168eaf2f297aa8d9e3ae3e64b6a9df8f03ac4ac
+        uses: kemp233/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
         with:
           build_target: kernel
