@@ -213,9 +213,11 @@ jobs:
           cd /tmp/rk-rockchip
           make -j$(nproc) ARCH=arm64 defconfig
           make -j$(nproc) ARCH=arm64 scripts_basic scripts_dtc
-          make -j$(nproc) ARCH=arm64 arch/arm64/boot/dts/rockchip/rk3566-lb2004.dtb
           mkdir -p /builder/release/beta/kernel-stable/
-          cp arch/arm64/boot/dts/rockchip/rk3566-lb2004.dtb /builder/release/beta/kernel-stable/
+          DTS_FILE=arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts
+          DTC=scripts/dtc/dtc
+          DTC_INCLUDES="-I include -I arch/arm64/boot/dts -I arch/arm64/boot/dts/rockchip"
+          gcc -E -nostdinc ${DTC_INCLUDES} -undef -D__DTS__ -x assembler-with-cpp ${DTS_FILE} | ${DTC} -I dts -O dtb -o /builder/release/beta/kernel-stable/rk3566-lb2004.dtb -
           echo "=== LB2004 DTB info ==="
           ls -la /builder/release/beta/kernel-stable/rk3566-lb2004.dtb
           file /builder/release/beta/kernel-stable/rk3566-lb2004.dtb
