@@ -244,6 +244,25 @@ jobs:
             ${{ github.workspace }}/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts 2>/dev/null || echo "DTS 文件不可用"
           echo ""
           echo "==== 前置审计完成 ===="
+      - name: Compile the kernel [ ${{ matrix.kernel_version }}]
+        uses: ophub/amlogic-s9xxx-armbian@main
+        if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
+        with:
+          build_target: kernel
+          kernel_source: ${{ inputs.kernel_source }}
+          kernel_version: ${{ matrix.kernel_version }}
+          kernel_auto: ${{ inputs.kernel_auto }}
+          delete_source: false
+          kernel_package: ${{ inputs.kernel_package }}
+          kernel_sign: ${{ inputs.kernel_sign }}
+          kernel_toolchain: ${{ inputs.kernel_toolchain }}
+          ccache_clear: ${{ inputs.ccache_clear }}
+          docker_hostpath: /builder
+          docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
+          auto_patch: true
+          kernel_patch: ${{ inputs.kernel_patch }}
+          kernel_config: ${{ inputs.kernel_config }}
+          enable_log: true
 
       - name: 📊 编译后链路失效分析
         if: always()
@@ -272,25 +291,4 @@ jobs:
           shopt -u nullglob
           echo ""
           echo "==== 后置分析完成 ===="
-
-      - name: Compile the kernel [ ${{ matrix.kernel_version }}]
-        uses: ophub/amlogic-s9xxx-armbian@main
-        if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
-        with:
-          build_target: kernel
-          kernel_source: ${{ inputs.kernel_source }}
-          kernel_version: ${{ matrix.kernel_version }}
-          kernel_auto: ${{ inputs.kernel_auto }}
-          delete_source: false
-          kernel_package: ${{ inputs.kernel_package }}
-          kernel_sign: ${{ inputs.kernel_sign }}
-          kernel_toolchain: ${{ inputs.kernel_toolchain }}
-          ccache_clear: ${{ inputs.ccache_clear }}
-          docker_hostpath: /builder
-          docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
-          auto_patch: true
-          kernel_patch: ${{ inputs.kernel_patch }}
-          kernel_config: ${{ inputs.kernel_config }}
-          enable_log: true
-
 
