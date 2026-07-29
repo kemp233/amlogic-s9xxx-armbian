@@ -210,34 +210,29 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
-      - name: 🕵️ 启动后台动态注入器 (监控并抢注)
+      - name: 🕵️ 启动后台动态注入器 (宿主机路径监控, 直接注入)
         run: |
-          DTS_IN_CONTAINER="/opt/kernel/compile-kernel/kernel/linux-6.1.y-rockchip-main/arch/arm64/boot/dts/rockchip"
-          DOCKER_NAME="armbian-ophub"
-          echo "==== 动态注入器已启动，等待容器就绪 ===="
+          HOST_DTS="/builder/compile-kernel/kernel/linux-6.1.y-rockchip-main/arch/arm64/boot/dts/rockchip"
+          SRC_DTS="${{ github.workspace }}/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts"
+          echo "==== 动态注入器已启动，监控宿主机路径 ===="
+          echo "  目标 Makefile: ${HOST_DTS}/Makefile"
+          echo "  源 DTS: ${SRC_DTS}"
           (
           while true; do
-            if docker ps --format '{{.Names}}' | grep -q "$DOCKER_NAME"; then
-              if docker exec $DOCKER_NAME ls $DTS_IN_CONTAINER/Makefile >/dev/null 2>&1; then
-                if ! docker exec $DOCKER_NAME grep -q "rk3566-lb2004.dtb" $DTS_IN_CONTAINER/Makefile; then
-                  echo "[$(date +%T)] 🚀 检测到源码就绪，开始执行容器内强制注入..."
-                  docker exec $DOCKER_NAME cp -f /builder/patch-dts/rk3566-lb2004.dts $DTS_IN_CONTAINER/rk3566-lb2004.dts 2>/dev/null || true
-                  docker exec $DOCKER_NAME sed -i '/rk3566-pinenote.dtb/i dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' $DTS_IN_CONTAINER/Makefile 2>/dev/null || true
-                  echo "[$(date +%T)] ✅ 尝试注入完毕"
-                fi
+            if [ -f "${HOST_DTS}/Makefile" ] && ls "${HOST_DTS}"/*.dts >/dev/null 2>&1; then
+              if ! grep -q "rk3566-lb2004.dtb" "${HOST_DTS}/Makefile"; then
+                echo "[$(date +%T)] 🚀 检测到内核树就绪，开始注入..."
+                cp -f "${SRC_DTS}" "${HOST_DTS}/rk3566-lb2004.dts" && echo "[$(date +%T)] DTS 复制成功"
+                sed -i '/rk3566-pinenote.dtb/i dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' "${HOST_DTS}/Makefile"
+                echo "[$(date +%T)] ✅ Makefile 条目已注入"
+                break
               fi
             fi
-            sleep 1
+            sleep 2
           done
           ) &
           echo "INJECTOR_PID=$!" >> $GITHUB_ENV
           echo "注入器PID=$!"
-
-      - name: 🚀 挂载 DTS 到容器可见目录
-        run: |
-          sudo mkdir -p /builder/patch-dts
-          sudo cp -f compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts /builder/patch-dts/
-          echo "DTS 已就位: $(ls -la /builder/patch-dts/rk3566-lb2004.dts)"
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
@@ -263,7 +258,8 @@ jobs:
         if: always()
         run: |
           kill ${{ env.INJECTOR_PID }} 2>/dev/null || true
-          echo "==== 检查最终编译现场 ===="
-          ls -l /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004* 2>/dev/null || echo "文件最终不存在"
-          echo "==== 容器内状态 ===="
-          docker ps -q --filter "name=armbian-ophub" | xargs -I{} docker exec {} ls -la /opt/kernel/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004* 2>/dev/null || echo "容器查询失败或文件不存在"
+          echo "==== 检查最终编译现场 (宿主机) ===="
+          HOST_DTS="/builder/compile-kernel/kernel/linux-6.1.y-rockchip-main/arch/arm64/boot/dts/rockchip"
+          ls -la ${HOST_DTS}/rk3566-lb2004* 2>/dev/null || echo "DTS 文件在宿主机不存在"
+          echo "==== 检查 output ===="
+          find /builder/compile-kernel/output -name "*lb2004*" 2>/dev/null || echo "output 中无 lb2004"
