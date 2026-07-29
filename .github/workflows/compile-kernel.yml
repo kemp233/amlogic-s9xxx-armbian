@@ -214,6 +214,7 @@ jobs:
           docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
           kernel_patch: ${{ inputs.kernel_patch }}
           kernel_config: ${{ inputs.kernel_config }}
+          enable_log: true
 
       - name: Inject lb2004 dtb
         if: success() && env.PACKAGED_STATUS == 'success'
