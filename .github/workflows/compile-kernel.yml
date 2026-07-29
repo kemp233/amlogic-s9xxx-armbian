@@ -203,9 +203,9 @@ jobs:
           touch /tmp/raw_build_paths.log
           (
           while true; do
-            find /builder/compile-kernel -maxdepth 5 -type d 2>/dev/null >> /tmp/raw_build_paths.log
-            find /builder/compile-kernel -name '*lb2004*' 2>/dev/null >> /tmp/raw_build_paths.log
-            sleep 10
+            find /builder/compile-kernel -iname "*lb2004*" 2>/dev/null >> /tmp/lb2004_only.log
+            if [ -d "/builder/compile-kernel/output" ]; then find /builder/compile-kernel/output -name "*.dtb" 2>/dev/null >> /tmp/lb2004_only.log; fi
+            sleep 2
           done
           ) &
           echo "MONITOR_PID=$!" >> $GITHUB_ENV
