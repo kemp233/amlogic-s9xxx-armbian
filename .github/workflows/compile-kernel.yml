@@ -233,6 +233,48 @@ jobs:
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
+            - name: 🔧 Inject lb2004 dtb via Docker
+        if: success()
+        run: |
+          DOCKER_NAME=armbian-ophub
+          if ! docker ps -q --filter "name=${DOCKER_NAME}" | grep -q .; then
+            echo "Docker container not running, skip"
+            exit 0
+          fi
+          KERNEL_SRC=/opt/kernel/compile-kernel/kernel/linux-6.1.y
+          DTS_FILE=/opt/kernel/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts
+          ROCKCHIP_DIR="${KERNEL_SRC}/arch/arm64/boot/dts/rockchip"
+          MAKEFILE="${ROCKCHIP_DIR}/Makefile"
+
+          echo "=== Step 1: Copy DTS to rockchip dir ==="
+          docker exec ${DOCKER_NAME} cp -vf "${DTS_FILE}" "${ROCKCHIP_DIR}/" || { echo "DTS copy failed"; exit 1; }
+          docker exec ${DOCKER_NAME} ls -la "${ROCKCHIP_DIR}/rk3566-lb2004.dts"
+
+          echo "=== Step 2: Inject Makefile entry ==="
+          # Using CONFIG_ARCH_ROCKCHIP=y for force compile
+          docker exec ${DOCKER_NAME} sh -c "
+            if ! grep -q 'rk3566-lb2004.dtb' ${MAKEFILE}; then
+              sed -i '/^dtb-\$(CONFIG_ARCH_ROCKCHIP) += rk3566-quartz64-b.dtb/ a dtb-\$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' ${MAKEFILE}
+              echo 'Makefile entry added'
+            else
+              echo 'Makefile already has lb2004 entry'
+            fi
+            grep 'lb2004' ${MAKEFILE}
+          "
+
+          echo "=== Step 3: Rebuild dtbs ==="
+          docker exec ${DOCKER_NAME} sh -c "
+            TOOLCHAIN=/usr/local/toolchain/arm-gnu-toolchain-15.3.rel1-aarch64-aarch64-none-linux-gnu
+            export ARCH=arm64
+            export CROSS_COMPILE=\${TOOLCHAIN}/bin/aarch64-none-linux-gnu-
+            export PATH=\${TOOLCHAIN}/bin:\$PATH
+            cd ${KERNEL_SRC}
+            make dtbs 2>&1 | grep -E 'DTC.*lb2004|Error|No rule'
+          "
+
+          echo "=== Step 4: Verify dtb ==="
+          docker exec ${DOCKER_NAME} ls -la "${KERNEL_SRC}/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dtb" && echo "SUCCESS: lb2004 dtb built" || echo "FAILED: no dtb"
+
       - name: 📊 汇总全过程目录快照 (去重后)
         if: always()
         run: |
