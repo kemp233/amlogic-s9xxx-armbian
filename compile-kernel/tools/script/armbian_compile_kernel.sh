@@ -465,6 +465,15 @@ apply_patch() {
             for f in "${kernel_patch_path}"/${local_kernel_path}/*.dts; do
                 if [[ -f "${f}" ]]; then
                     cp -vf "${f}" -t "${kernel_path}/${local_kernel_path}/arch/arm64/boot/dts/rockchip/" 2>/dev/null || true
+                    # Auto-add Makefile entries for custom DTS files
+                    dts_name=$(basename "${f}" .dts)
+                    makefile="${kernel_path}/${local_kernel_path}/arch/arm64/boot/dts/rockchip/Makefile"
+                    if grep -q "dtb-\$(CONFIG_ARCH_ROCKCHIP) += \${dts_name}.dtb" "${makefile}" 2>/dev/null; then
+                        echo -e "${INFO} Makefile already has \${dts_name}.dtb"
+                    else
+                        sed -i "/^dtb-\$(CONFIG_ARCH_ROCKCHIP)/a dtb-\$(CONFIG_ARCH_ROCKCHIP) += \${dts_name}.dtb" "${makefile}" 2>/dev/null || true
+                        echo -e "${INFO} Added dtb-\$(CONFIG_ARCH_ROCKCHIP) += \${dts_name}.dtb to Makefile"
+                    fi
                 fi
             done
         fi
