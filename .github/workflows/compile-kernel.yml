@@ -227,12 +227,24 @@ jobs:
               if [ -f "$REAL_DIR/Makefile" ]; then
                 sed -i '/rk3566-pinenote.dtb/i dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' "$REAL_DIR/Makefile"
                 echo "[$(date +%T)] ✅ 注入完成: Makefile 已更新"
-              fi
-            fi
-          done
-          ) &
-          echo "INJECTOR_PID=$!" >> $GITHUB_ENV
-          echo "探针 PID=$!"
+              echo "审计器已就位"
+
+      - name: 📂 补丁链路前置审计
+        run: |
+          echo "==== 步骤 1：静态参数审计 ===="
+          echo "kernel_patch = ${{ inputs.kernel_patch }}"
+          echo "kernel_source = ${{ inputs.kernel_source }}"
+          echo "kernel_version = ${{ matrix.kernel_version }}"
+          env | grep -E 'INPUT_KERNEL|GITHUB_REF' || true
+          echo ""
+          echo "==== 步骤 2：补丁目录结构 ===="
+          PATCH_DIR="${{ github.workspace }}/compile-kernel/tools/patch"
+          find "$PATCH_DIR" -maxdepth 3 -ls 2>/dev/null || echo "补丁目录不存在"
+          echo ""
+          echo "==== 步骤 3：Docker 环境 ===="
+          docker info --format '{{.ServerVersion}}' 2>/dev/null || echo "Docker 未就绪"
+          echo ""
+          echo "==== 前置审计完成 ===="
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
