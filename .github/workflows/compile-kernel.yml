@@ -13,7 +13,7 @@ on:
       kernel_source:
         description: "Select the kernel source"
         required: false
-        default: "unifreq"
+        default: "unifreq/linux-6.1.y-rockchip"
         type: choice
         options:
           - unifreq
@@ -316,34 +316,6 @@ jobs:
           kernel_patch: ${{ inputs.kernel_patch }}
           kernel_config: false
           enable_log: true
-
-      - name: 🚀 Inject LB2004 DTS + compile dtb inside container
-        if: always()
-        run: |
-          DOCKER_NAME=armbian-ophub
-          echo "等待容器 arnbian-ophub..."
-          for i in $(seq 1 60); do
-            docker ps --format '{{.Names}}' | grep -q "$DOCKER_NAME" && break
-            sleep 2
-          done
-
-          DTS_SRC="${{ github.workspace }}/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts"
-          ROCKCHIP_DIR="/opt/kernel/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip"
-
-          echo "Step 1: 复制 替换到容器"
-          docker cp "$DTS_SRC" ${DOCKER_NAME}:${ROCKCHIP_DIR}/rk3566-lb2004.dts
-
-          echo "Step 2: 注入 替换到容器"
-          docker exec ${DOCKER_NAME} sed -i '/rk3566-pinenote.dtb/a dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' ${ROCKCHIP_DIR}/Makefile
-
-          echo "Step 3: 编译 lb2004 dtb"
-          docker exec ${DOCKER_NAME} bash -c "cd /opt/kernel/compile-kernel/kernel/linux-6.1.y && make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- dtbs" 2>&1 | tail -30
-
-          echo "Step 4: 验证"
-          docker exec ${DOCKER_NAME} ls -la ${ROCKCHIP_DIR}/rk3566-lb2004*
-
-
-
       - name: 📋 探针追踪报告 (三维)
         if: always()
         run: |
