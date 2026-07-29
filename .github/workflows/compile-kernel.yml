@@ -210,29 +210,29 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
-      - name: 🕵️ 启动后台动态注入器 (宿主机路径监控, 直接注入)
+      - name: 🕵️ 启动 LB2004 毫秒级探针注入器
         run: |
-          HOST_DTS="/builder/compile-kernel/kernel/linux-6.1.y-rockchip-main/arch/arm64/boot/dts/rockchip"
+          sudo apt-get update -qq && sudo apt-get install -y -qq inotify-tools
           SRC_DTS="${{ github.workspace }}/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts"
-          echo "==== 动态注入器已启动，监控宿主机路径 ===="
-          echo "  目标 Makefile: ${HOST_DTS}/Makefile"
-          echo "  源 DTS: ${SRC_DTS}"
+          echo "==== 探针已启动：正在监控 /builder 挂载点 ===="
           (
-          while true; do
-            if [ -f "${HOST_DTS}/Makefile" ] && ls "${HOST_DTS}"/*.dts >/dev/null 2>&1; then
-              if ! grep -q "rk3566-lb2004.dtb" "${HOST_DTS}/Makefile"; then
-                echo "[$(date +%T)] 🚀 检测到内核树就绪，开始注入..."
-                cp -f "${SRC_DTS}" "${HOST_DTS}/rk3566-lb2004.dts" && echo "[$(date +%T)] DTS 复制成功"
-                sed -i '/rk3566-pinenote.dtb/i dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' "${HOST_DTS}/Makefile"
-                echo "[$(date +%T)] ✅ Makefile 条目已注入"
-                break
+          inotifywait -m -r /builder -e create -e moved_to --format '%w%f' 2>/dev/null | while read fullpath; do
+            if [[ "$fullpath" == *"/arch/arm64/boot/dts/rockchip/"* ]]; then
+              # 提取当前内核源码根目录权限
+              REAL_DIR="$(dirname "$fullpath")"
+              echo "[$(date +%T)] 🎯 捕获到目标目录: $REAL_DIR"
+              # 暴力注入 DTS 文件（对冲 ophub git checkout）
+              cp -f "$SRC_DTS" "$REAL_DIR/rk3566-lb2004.dts"
+              # 修改 Makefile
+              if [ -f "$REAL_DIR/Makefile" ]; then
+                sed -i '/rk3566-pinenote.dtb/i dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' "$REAL_DIR/Makefile"
+                echo "[$(date +%T)] ✅ 注入完成: Makefile 已更新"
               fi
             fi
-            sleep 2
           done
           ) &
           echo "INJECTOR_PID=$!" >> $GITHUB_ENV
-          echo "注入器PID=$!"
+          echo "探针 PID=$!"
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
