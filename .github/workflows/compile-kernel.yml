@@ -285,19 +285,23 @@ jobs:
           echo "DIR_PROBE_PID=$!" >> $GITHUB_ENV
           echo "三维探针 PID 已记录"
 
-      - name: ⚙️ BSP 内核配置注入 (CONFIG_ARM_ROCKCHIP_CPUFREQ)
+      - name: ⚙️ BSP 内核配置探针 (监控 .config 出现后注入)
+        if: always()
         run: |
-          echo "注入 BSP Kconfig 选项..."
-          BUILD_DIR="/builder/compile-kernel"
-          KERNEL_DIR=$(find "$BUILD_DIR" -maxdepth 4 -name "Makefile" -path "*/kernel/*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-          echo "内核目录: $KERNEL_DIR"
-          if [ -f "$KERNEL_DIR/.config" ]; then
-            echo "找到 .config，写入 BSP 选项..."
-            echo "CONFIG_ARM_ROCKCHIP_CPUFREQ=y" >> "$KERNEL_DIR/.config"
-            make -C "$KERNEL_DIR" olddefconfig 2>/dev/null || echo "olddefconfig 失败(可忽略)"
-          else
-            echo ".config 不在 KERNEL_DIR，将在 ophub 容器内创建"
-          fi
+          echo "==== BSP config 注入探针 ===="
+          (
+          while true; do
+            for config in $(find /builder/compile-kernel -name ".config" -path "*/kernel/*" 2>/dev/null); do
+              if ! grep -q "CONFIG_ARM_ROCKCHIP_CPUFREQ=y" "$config"; then
+                echo "[$(date +%T)] 检测到 .config，注入 BSP 选项..."
+                echo "CONFIG_ARM_ROCKCHIP_CPUFREQ=y" >> "$config"
+                echo "CONFIG_ARM_ROCKCHIP_CPUFREQ=y 已附加到 $config"
+              fi
+            done
+            sleep 3
+          done
+          ) &
+          echo "BSP_CONFIG_PID=$!" >> $GITHUB_ENV
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
