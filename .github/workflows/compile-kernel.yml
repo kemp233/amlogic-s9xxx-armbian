@@ -197,28 +197,43 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
-      - name: 🕵️ 启动 LB2004 全盘监视器 (后台)
+      - name: 🕵️ 启动 LB2004 高频哨兵 (监控失效点)
         run: |
-          echo "==== 开启全路径 lb2004 追踪 ===="
-          touch /tmp/lb2004_trace.log
+          TARGET_FILE="/builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts"
+          touch /tmp/sentinel_event.log
+          echo "==== 哨兵已就位，开始监控：$TARGET_FILE ===="
           (
+          last_state="none"
           while true; do
-            echo "--- $(date +%H:%M:%S) ---" >> /tmp/lb2004_trace.log
-            # 1. 搜宿主机工作区 (当前仓库里的 patch/dts 文件)
-            find ${{ github.workspace }} -iname "*lb2004*" -exec ls -la {} \; 2>/dev/null >> /tmp/lb2004_trace.log
-            # 2. 搜 Docker 挂载点 (注入后编译生成的文件)
-            find /builder/compile-kernel -iname "*lb2004*" -exec ls -la {} \; 2>/dev/null >> /tmp/lb2004_trace.log
-            # 3. 如果输出目录存在，也搜 dtb
-            if [ -d "/builder/compile-kernel/output" ]; then
-              find /builder/compile-kernel/output -iname "*lb2004*" -exec ls -la {} \; 2>/dev/null >> /tmp/lb2004_trace.log
+            if [ -f "$TARGET_FILE" ]; then
+              curr_state="exist"
+            else
+              curr_state="missing"
             fi
-            sleep 2
+            if [ "$curr_state" != "$last_state" ]; then
+              timestamp=$(date +"%H:%M:%S.%3N")
+              echo "[$timestamp] 文件状态变更: $last_state -> $curr_state" >> /tmp/sentinel_event.log
+              if [ "$curr_state" == "missing" ] && [ "$last_state" == "exist" ]; then
+                echo "--- ！！！报警：文件已被删除 ！！！ ---" >> /tmp/sentinel_event.log
+                echo "最近 10 行系统日志:" >> /tmp/sentinel_event.log
+                dmesg | tail -n 10 >> /tmp/sentinel_event.log
+              fi
+            fi
+            last_state=$curr_state
+            sleep 1
           done
           ) &
-          echo "MONITOR_PID=$!" >> $GITHUB_ENV
+          echo "SENTINEL_PID=$!" >> $GITHUB_ENV
 
+      - name: 🚀 强行物理注入并标记现场
+        run: |
+          DTS_DIR="/mnt/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip"
+          mkdir -p $DTS_DIR
+          cp -f compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts $DTS_DIR/rk3566-lb2004.dts
+          [ -f "$DTS_DIR/Makefile" ] && sed -i '/rk3566-pinenote.dtb/a \tdtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' $DTS_DIR/Makefile
+          echo "注入完成时间: $(date +"%H:%M:%S.%3N")"
 
-      - name: Compile the kernel [ ${{ matrix.kernel_version }} ]
+      - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
         with:
@@ -231,31 +246,20 @@ jobs:
           kernel_sign: ${{ inputs.kernel_sign }}
           kernel_toolchain: ${{ inputs.kernel_toolchain }}
           ccache_clear: ${{ inputs.ccache_clear }}
-          docker_hostpath: /builder
+          docker_hostpath: /mnt
           docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
           auto_patch: true
           kernel_patch: ${{ inputs.kernel_patch }}
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
-      - name: 📊 汇总全过程目录快照 (去重后)
+      - name: 📊 分析失效精确位置
         if: always()
         run: |
-          kill ${{ env.MONITOR_PID }} || true
-          find /builder/compile-kernel -type d 2>/dev/null >> /tmp/raw_build_paths.log
-          echo "==================== 编译链路动态快照报告 ====================" > build_process_dirs.log
-          echo "报告生成时间: $(date)" >> build_process_dirs.log
-          echo "说明: 该日志包含编译过程中出现过的所有目录路径（去重后）" >> build_process_dirs.log
-          echo "---------------------------------------------------------" >> build_process_dirs.log
-          sort -u /tmp/raw_build_paths.log >> build_process_dirs.log
-          cat build_process_dirs.log
-
-      - name: 🚀 上传监控日志附件
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-process-directory-log
-          path: build_process_dirs.log
+          kill ${{ env.SENTINEL_PID }} || true
+          echo "==================== 哨兵追踪报告 ===================="
+          cat /tmp/sentinel_event.log
+          echo "======================================================"
           retention-days: 7
 
       - name: Upload Kernel to Release
