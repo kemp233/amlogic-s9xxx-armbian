@@ -1,0 +1,2 @@
+#!/bin/bash
+echo "cd /root/.openclaw/workspace/kemp233-amlogic-s9xxx-armbian\ngit add -A\ngit commit -m \"feat: compile lb2004 dtb in Docker container from kemp233/linux-rockchip\"\ngit push origin main" | bash

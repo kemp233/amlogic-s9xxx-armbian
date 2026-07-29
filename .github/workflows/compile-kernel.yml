@@ -252,24 +252,6 @@ jobs:
           path: build_process_dirs.log
           retention-days: 7
 
-      - name: Inject lb2004 dtb (DISABLED)
-        if: false
-        run: |
-          set -e
-          echo "=== Inject lb2004 dtb ==="
-          echo "PACKAGED_OUTPUTPATH: ${{ env.PACKAGED_OUTPUTPATH }}"
-          echo "PACKAGED_OUTPUTTAGS: ${{ env.PACKAGED_OUTPUTTAGS }}"
-          RELEASE_URL="https://github.com/kemp233/kernel/releases/download/kernel_rk35xx/rk3566-lb2004.dtb"
-          echo "Downloading from: ${RELEASE_URL}"
-          curl -fsSL -v -o "${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb" "${RELEASE_URL}"
-          echo "=== Download result ==="
-          ls -la "${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb" && echo "lb2004 dtb ready" || {
-            echo "WARN: lb2004 dtb not available from release, skipping..."
-            echo "This is OK if this is not a 6.1.y rockchip kernel build"
-          }
-          echo "=== Output dir contents ==="
-          ls -la "${{ env.PACKAGED_OUTPUTPATH }}/" 2>/dev/null || true
-
       - name: Upload Kernel to Release
         uses: ophub/upload-to-releases@main
         if: ${{ env.PACKAGED_STATUS == 'success' && !cancelled() }}

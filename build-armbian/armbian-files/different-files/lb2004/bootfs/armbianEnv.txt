@@ -1,0 +1,11 @@
+verbosity=7
+bootlogo=false
+console=serial
+fdtfile=rockchip/rk3566-lb2004.dtb
+overlays=
+fdt_overlay=
+rootdev=UUID=b5111442-08e2-44bd-a127-5f49778bbe74
+rootfstype=ext4
+usbstoragequirks=0x2537:0x1066:u,0x2537:0x1068:u
+extraargs=net.ifnames=0 biosdevname=0 crashkernel=256M
+bootenv___extra=video=efifb:off
