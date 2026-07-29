@@ -289,6 +289,14 @@ jobs:
           echo "DIR_PROBE_PID=$!" >> $GITHUB_ENV
           echo "三维探针 PID 已记录"
 
+      - name: ⚙️ 替换 ophub 通用 config 为 BSP defconfig
+        run: |
+          echo "=== 替换 kernel config ==="
+          cp -f "${{ github.workspace }}/compile-kernel/tools/config/rockchip-bsp-6.1" \
+                "${{ github.workspace }}/compile-kernel/tools/config/config-6.1"
+          echo "config-6.1 已替换: $(wc -l < ${{ github.workspace }}/compile-kernel/tools/config/config-6.1) 行"
+          grep -c "CONFIG_ARM_ROCKCHIP_CPUFREQ" "${{ github.workspace }}/compile-kernel/tools/config/config-6.1" && echo "✅ BSP config 就绪" || echo "❌ BSP config 缺失!"
+
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
@@ -306,7 +314,7 @@ jobs:
           docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
           auto_patch: true
           kernel_patch: ${{ inputs.kernel_patch }}
-          kernel_config: ${{ inputs.kernel_config }}
+          kernel_config: false
           enable_log: true
 
       - name: 🚀 Inject LB2004 DTS + compile dtb inside container
