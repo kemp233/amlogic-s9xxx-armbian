@@ -285,23 +285,17 @@ jobs:
           echo "DIR_PROBE_PID=$!" >> $GITHUB_ENV
           echo "三维探针 PID 已记录"
 
-      - name: ⚙️ BSP 内核配置探针 (监控 .config 出现后注入)
-        if: always()
+      - name: ⚙️ BSP defconfig 替换 ophub 通用 config
         run: |
-          echo "==== BSP config 注入探针 ===="
-          (
-          while true; do
-            for config in $(find /builder/compile-kernel -name ".config" -path "*/kernel/*" 2>/dev/null); do
-              if ! grep -q "CONFIG_ARM_ROCKCHIP_CPUFREQ=y" "$config"; then
-                echo "[$(date +%T)] 检测到 .config，注入 BSP 选项..."
-                echo "CONFIG_ARM_ROCKCHIP_CPUFREQ=y" >> "$config"
-                echo "CONFIG_ARM_ROCKCHIP_CPUFREQ=y 已附加到 $config"
-              fi
-            done
-            sleep 3
-          done
-          ) &
-          echo "BSP_CONFIG_PID=$!" >> $GITHUB_ENV
+          echo "==== 准备 BSP defconfig ===="
+          # 下载 BSP 内核的 rockchip_linux_defconfig
+          DEFCONFIG_URL="https://raw.githubusercontent.com/kemp233/linux-rockchip/rk-6.1-rkr6.1/arch/arm64/configs/rockchip_linux_defconfig"
+          CONFIG_DIR="${{ github.workspace }}/compile-kernel/tools/config"
+          mkdir -p "$CONFIG_DIR"
+          curl -fsSL -m 30 "$DEFCONFIG_URL" -o "$CONFIG_DIR/config-6.1"
+          echo "defconfig 下载完成: $(wc -l < "$CONFIG_DIR/config-6.1") 行"
+          echo "BSP 关键 Kconfig:"
+          grep -E "CONFIG_ARM_ROCKCHIP_CPUFREQ|CONFIG_ARCH_ROCKCHIP|ROCKCHIP_DMA|ROCKCHIP_THERMAL|ROCKCHIP_SARADC" "$CONFIG_DIR/config-6.1" || true
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
