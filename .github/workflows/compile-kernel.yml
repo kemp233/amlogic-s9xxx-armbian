@@ -220,21 +220,19 @@ jobs:
         if: success() && env.PACKAGED_STATUS == 'success'
         run: |
           set -e
+          echo "=== Inject lb2004 dtb ==="
+          echo "PACKAGED_OUTPUTPATH: ${{ env.PACKAGED_OUTPUTPATH }}"
+          echo "PACKAGED_OUTPUTTAGS: ${{ env.PACKAGED_OUTPUTTAGS }}"
           RELEASE_URL="https://github.com/kemp233/kernel/releases/download/kernel_rk35xx/rk3566-lb2004.dtb"
-          curl -fsSL -o "${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb" "${RELEASE_URL}" && echo "lb2004 dtb injected from release" || {
-            echo "Release download failed, building manually..."
-            mkdir -p /tmp/rk-src && cd /tmp/rk-src
-            git clone --depth=1 --branch=rk-6.1-rkr6.1 https://github.com/kemp233/linux-rockchip.git .
-            export ARCH=arm64
-            export CROSS_COMPILE=aarch64-none-linux-gnu-
-            make -j$(nproc) defconfig scripts_dtc 2>&1 | tail -5
-            cpp -nostdinc -I include -I arch/arm64/boot/dts -I arch/arm64/boot/dts/rockchip \
-              -undef -D__DTS__ -x assembler-with-cpp \
-              arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts \
-              | scripts/dtc/dtc -I dts -O dtb -o ${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb -
-            echo "Manual build done"
+          echo "Downloading from: ${RELEASE_URL}"
+          curl -fsSL -v -o "${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb" "${RELEASE_URL}"
+          echo "=== Download result ==="
+          ls -la "${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb" && echo "lb2004 dtb ready" || {
+            echo "WARN: lb2004 dtb not available from release, skipping..."
+            echo "This is OK if this is not a 6.1.y rockchip kernel build"
           }
-          ls -la ${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb && echo "lb2004 dtb ready" || echo "FAILED"
+          echo "=== Output dir contents ==="
+          ls -la "${{ env.PACKAGED_OUTPUTPATH }}/" 2>/dev/null || true
 
       - name: Upload Kernel to Release
         uses: ophub/upload-to-releases@main
