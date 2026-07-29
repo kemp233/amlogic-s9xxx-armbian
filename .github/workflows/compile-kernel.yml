@@ -244,6 +244,46 @@ jobs:
             ${{ github.workspace }}/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts 2>/dev/null || echo "DTS 文件不可用"
           echo ""
           echo "==== 前置审计完成 ===="
+
+      - name: 🔬 启动三维编译链探针 (进程/文件/快照)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq inotify-tools || true
+          echo "==== 三维探针已启动 ===="
+          # 探针 1: 进程调用链追踪
+          (
+          while true; do
+            ts=$(date +"%H:%M:%S.%3N")
+            ps -eo pid,cmd --no-headers 2>/dev/null | grep -E "patch|git clone|git checkout|make dtbs|docker run|rm -rf.*dts|cp.*dts|sed.*rockchip|kernel_compile" | while read pid cmd; do
+              echo "[$ts] PID=$pid CMD=$cmd" >> /tmp/proc_trace.log
+            done
+            sleep 0.5
+          done
+          ) & echo "PROC_PROBE_PID=$!" >> $GITHUB_ENV
+          
+          # 探针 2: 文件系统事件追踪
+          (
+          inotifywait -m -r /builder -e create -e delete -e moved_from -e moved_to --format "%T %e %w%f" --timefmt "%H:%M:%S" 2>/dev/null | while read line; do
+            echo "$line" | grep -E "rockchip|lb2004|dts|Makefile" >> /tmp/ino_events.log
+          done
+          ) &
+          echo "INOTIFY_PROBE_PID=$!" >> $GITHUB_ENV
+          
+          # 探针 3: 强制快照探针
+          (
+          while true; do
+            echo "--- $(date +"%H:%M:%S") ---" >> /tmp/dir_snaps.log
+            for dir in $(find /builder -maxdepth 6 -name "rockchip" -type d 2>/dev/null); do
+              if [ -f "$dir/Makefile" ]; then
+                c=$(grep -c "lb2004" "$dir/Makefile" 2>/dev/null || echo 0)
+                l=$(wc -l < "$dir/Makefile" 2>/dev/null || echo 0)
+                echo "  Dir=$dir  lb2004_lines=$c  total_lines=$l" >> /tmp/dir_snaps.log
+              fi
+            done
+            sleep 2
+          done
+          ) &
+          echo "DIR_PROBE_PID=$!" >> $GITHUB_ENV
+          echo "三维探针 PID 已记录"
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
@@ -264,6 +304,37 @@ jobs:
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
+
+      - name: 📋 探针追踪报告 (三维)
+        if: always()
+        run: |
+          echo "==== 三维探针追踪结果 ===="
+          kill ${{ env.PROC_PROBE_PID }} ${{ env.INOTIFY_PROBE_PID }} ${{ env.DIR_PROBE_PID }} 2>/dev/null || true
+          sleep 1
+          echo ""
+          echo "=== [1] 进程调用链 (patch/git/make/docker) ==="
+          if [ -f /tmp/proc_trace.log ]; then
+            sort -u /tmp/proc_trace.log | head -50
+            echo "... 总行数: $(wc -l < /tmp/proc_trace.log)"
+          else
+            echo "(无进程追踪数据)"
+          fi
+          echo ""
+          echo "=== [2] 文件事件 (Inotify) ==="
+          if [ -s /tmp/ino_events.log ]; then
+            echo "事件总数: $(wc -l < /tmp/ino_events.log)"
+            head -50 /tmp/ino_events.log
+          else
+            echo "无文件事件(容器内操作不在宿主机产生 inotify)"
+          fi
+          echo ""
+          echo "=== [3] 强制快照 (Makefile 条目历史) ==="
+          if [ -f /tmp/dir_snaps.log ]; then
+            cat /tmp/dir_snaps.log
+          else
+            echo "(无快照数据)"
+          fi
+          echo ""
       - name: 编译后全要素链路分析
         if: always()
         run: |
