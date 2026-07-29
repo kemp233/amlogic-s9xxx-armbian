@@ -215,34 +215,25 @@ jobs:
           kernel_patch: ${{ inputs.kernel_patch }}
           kernel_config: ${{ inputs.kernel_config }}
 
-      - name: Inject lb2004 dtb (DISABLED)
-        if: false
+      - name: Inject lb2004 dtb
+        if: success() && env.PACKAGED_STATUS == 'success'
         run: |
-          DOCKER_NAME=armbian-ophub
-          if ! docker ps -q --filter "name=${DOCKER_NAME}" | grep -q .; then
-            echo "Docker container ${DOCKER_NAME} not running, skip"
-            exit 0
-          fi
-          KERNEL_SRC=$(docker exec ${DOCKER_NAME} sh -c "find / -maxdepth 5 -name 'Makefile' -path '*/linux-6.1.y/Makefile' 2>/dev/null | head -1 | xargs dirname")
-          echo "KERNEL_SRC: ${KERNEL_SRC}"
-          # Only inject for 6.1.y kernel
-          if echo "${KERNEL_SRC}" | grep -q "linux-6.1.y"; then
-            echo "Injecting lb2004 DTS for 6.1.y kernel..."
-            DTS_DIR="${KERNEL_SRC}/arch/arm64/boot/dts/rockchip"
-            curl -fsSL -o /tmp/rk3566-lb2004.dts https://raw.githubusercontent.com/kemp233/kernel/main/kernel-patch/beta/linux-6.1.y-rockchip-main/rk3566-lb2004-bsp6.1.dts && docker cp /tmp/rk3566-lb2004.dts ${DOCKER_NAME}:${DTS_DIR}/rk3566-lb2004.dts
-            docker exec ${DOCKER_NAME} sed -i "/rk3566-taishanpi-dsi1-v10.dtb/ a dtb-\$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb" ${DTS_DIR}/Makefile
-            docker exec ${DOCKER_NAME} sh -c "
-              TOOLCHAIN=/usr/local/toolchain/arm-gnu-toolchain-15.3.rel1-aarch64-aarch64-none-linux-gnu
-              export ARCH=arm64
-              export CROSS_COMPILE=\${TOOLCHAIN}/bin/aarch64-none-linux-gnu-
-              export PATH=\${TOOLCHAIN}/bin:\$PATH
-              cd ${KERNEL_SRC}
-              make dtbs 2>&1 | grep -E 'DTC.*lb2004|Error'
-            "
-            docker cp ${DOCKER_NAME}:${KERNEL_SRC}/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dtb ${{ env.PACKAGED_OUTPUTPATH }}/ && echo "lb2004 dtb copied to output" || echo "FAILED"
-          else
-            echo "Not 6.1.y kernel, skipping lb2004 injection"
-          fi
+          set -e
+          RELEASE_URL="https://github.com/kemp233/kernel/releases/download/kernel_rk35xx/rk3566-lb2004.dtb"
+          curl -fsSL -o "${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb" "${RELEASE_URL}" && echo "lb2004 dtb injected from release" || {
+            echo "Release download failed, building manually..."
+            mkdir -p /tmp/rk-src && cd /tmp/rk-src
+            git clone --depth=1 --branch=rk-6.1-rkr6.1 https://github.com/kemp233/linux-rockchip.git .
+            export ARCH=arm64
+            export CROSS_COMPILE=aarch64-none-linux-gnu-
+            make -j$(nproc) defconfig scripts_dtc 2>&1 | tail -5
+            cpp -nostdinc -I include -I arch/arm64/boot/dts -I arch/arm64/boot/dts/rockchip \
+              -undef -D__DTS__ -x assembler-with-cpp \
+              arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts \
+              | scripts/dtc/dtc -I dts -O dtb -o ${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb -
+            echo "Manual build done"
+          }
+          ls -la ${{ env.PACKAGED_OUTPUTPATH }}/rk3566-lb2004.dtb && echo "lb2004 dtb ready" || echo "FAILED"
 
       - name: Upload Kernel to Release
         uses: ophub/upload-to-releases@main
