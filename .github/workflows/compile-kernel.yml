@@ -291,7 +291,7 @@ jobs:
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
-        if: (not (steps.done_run.outputs.status == 'failure' && cancelled()))
+        if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
         with:
           build_target: kernel
           kernel_source: ${{ inputs.kernel_source }}
@@ -310,11 +310,11 @@ jobs:
           enable_log: true
 
       - name: 🚀 Inject LB2004 DTS + compile dtb inside container
-        if: ${{ steps.kernel_config.outputs.status == 'success' && !cancelled() }}
+        if: always()
         run: |
           DOCKER_NAME=armbian-ophub
           echo "等待容器 arnbian-ophub..."
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             docker ps --format '{{.Names}}' | grep -q "$DOCKER_NAME" && break
             sleep 2
           done
