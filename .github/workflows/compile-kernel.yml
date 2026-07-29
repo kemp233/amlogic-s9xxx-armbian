@@ -204,6 +204,7 @@ jobs:
           (
           while true; do
             find /builder/compile-kernel -maxdepth 5 -type d 2>/dev/null >> /tmp/raw_build_paths.log
+            find /builder/compile-kernel -name '*lb2004*' 2>/dev/null >> /tmp/raw_build_paths.log
             sleep 10
           done
           ) &
@@ -250,8 +251,8 @@ jobs:
           path: build_process_dirs.log
           retention-days: 7
 
-      - name: Inject lb2004 dtb
-        if: success() && env.PACKAGED_STATUS == 'success'
+      - name: Inject lb2004 dtb (DISABLED)
+        if: false
         run: |
           set -e
           echo "=== Inject lb2004 dtb ==="
