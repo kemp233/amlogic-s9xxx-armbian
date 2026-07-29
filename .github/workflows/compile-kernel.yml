@@ -264,31 +264,59 @@ jobs:
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
-      - name: 📊 编译后链路失效分析
+      - name: 📊 编译后全要素链路分析
         if: always()
         run: |
-          echo "==== 后置审计 ===="
+          echo "==== 后置审计 (7 维) ===="
           echo ""
-          echo "--- [A] 补丁目录残留状态 ---"
-          PATCH_DIR="${{ github.workspace }}/compile-kernel/tools/patch"
-          find "$PATCH_DIR" -name "*lb2004*" -ls 2>/dev/null || echo "无 lb2004 文件残留"
+          # ---- A: 内核配置审计 (.config) ----
+          echo "--- [A] 内核配置 (.config) ---"
+          KERNEL_DIR=$(find /builder/compile-kernel -maxdepth 4 -name ".config" -path "*/kernel/*" 2>/dev/null | head -1)
+          if [ -f "$KERNEL_DIR" ]; then
+            echo ".config 找到: $KERNEL_DIR"
+            grep -E 'CONFIG_ARCH_ROCKCHIP|CONFIG_ARCH_RK3566|lb2004' "$KERNEL_DIR" 2>/dev/null | head -5 || echo "无 lb2004/.config 引用"
+          else
+            echo ".config 不存在(编译已清理)"
+          fi
           echo ""
-          echo "--- [B] 容器内源码树状态 ---"
-          # 检查 Docker 挂载点
-          find /mnt -name "*lb2004*" -ls 2>/dev/null || echo "/mnt 挂载点无 lb2004 文件"
-          find /builder -name "*lb2004*" -ls 2>/dev/null || echo "/builder 挂载点无 lb2004 文件"
+          # ---- 2: DTC 行为审计 ----
+          echo "--- [B] DTC 编译行为审计 ---"
+          find /builder/compile-kernel -name "*.o" -path "*/arch/arm64/boot/dts/*" 2>/dev/null | wc -l && echo " 个 dtb 文件已在 /builder 生成"
+          find /builder/compile-kernel/output -name "*.dtb" 2>/dev/null | wc -l && echo " 个 dtb 已在 output 目录"
           echo ""
-          echo "--- [C] 输出目录检查 ---"
-          find /builder/compile-kernel/output -name "*lb2004*" -ls 2>/dev/null || echo "输出目录无 lb2004 dtb"
-          find /opt/kernel/compile-kernel/output -name "*lb2004*" -ls 2>/dev/null || echo "/opt/kernel 输出目录无 lb2004 dtb"
+          # ---- 3: ccache 缓存审计 ----
+          echo "--- [C] ccache 缓存统计 ---"
+          if command  ccache 2>/dev/null; then
+            ccache -s 2>/dev/null || echo "ccache 无统计"
+          elif [ -d "$HOME/.ccache" ]; then
+            du -sh "$HOME/.ccache"
+            echo "ccache 存在本地缓存"
+          else
+            echo "ccache 不存在"
+          fi
           echo ""
-          echo "--- [D] 编译日志关键字提取 ---"
-          shopt -s nullglob
-          for log in /builder/compile-kernel/*.log; do
-            echo "日志文件: $log"
-            grep -i "lb2004\|patching\|Applying\|dtb-.*rk3566\|DTC.*rockchip\|make.*dtbs\|Hunk\|FAILED" "$log" || true
-          done
-          shopt -u nullglob
+          # ---- 4: 补丁目录残留状态 ----
+          echo "--- [D] 补丁目录残留 ---"
+          find "${{ github.workspace }}/compile-kernel/tools/patch" -name "*lb2004*" -ls 2>/dev/null || echo "无 lb2004 文件残留"
           echo ""
-          echo "==== 后置分析完成 ===="
+          # ---- 5: 容器内源码树 ----
+          echo "--- [E] 容器内源码树 ---"
+          find /builder -name "*lb2004*" -ls 2>/dev/null || echo "/builder 无 lb2004 文件"
+          echo ""
+          # ---- 6: 输出目录 ----
+          echo "--- [F] 输出目录 ---"
+          find /opt/kernel/compile-kernel/output -name "*lb2004*" 2>/dev/null || echo "/opt/kernel/output 无 lb2004 文件"
+          echo ""
+          # ---- 7: 打包脚本白名单 ----
+          echo "--- [G] 打包脚本白名单 ---"
+          OUTDIR=$(find /opt/kernel/compile-kernel/output -maxdepth 1 -type d -name "kernel*" 2>/dev/null | head -1)
+          if [ -n "$OUTDIR" ]; then
+            echo "输出目录: $OUTDIR"
+            find "$OUTDIR" -name "*.dtb" -path "*/rockchip*" 2>/dev/null | sort | head -20
+            echo "rockchip dtb 总数: $(find "$OUTDIR" -name "*.dtb" -path "*/rockchip*" 2>/dev/null | wc -l)"
+          else
+            ls /opt/kernel/compile-kernel/output/ 2>/dev/null | head -10 || echo "output 不可访问"
+          fi
+          echo ""
+          echo "==== 后置 7 维分析完成 ===="
 
