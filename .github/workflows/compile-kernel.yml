@@ -254,12 +254,4 @@ jobs:
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
-      - name: 📊 验证注入结果
-        if: always()
-        run: |
-          kill ${{ env.INJECTOR_PID }} 2>/dev/null || true
-          echo "==== 检查最终编译现场 (宿主机) ===="
-          HOST_DTS="/builder/compile-kernel/kernel/linux-6.1.y-rockchip-main/arch/arm64/boot/dts/rockchip"
-          ls -la ${HOST_DTS}/rk3566-lb2004* 2>/dev/null || echo "DTS 文件在宿主机不存在"
-          echo "==== 检查 output ===="
-          find /builder/compile-kernel/output -name "*lb2004*" 2>/dev/null || echo "output 中无 lb2004"
+
