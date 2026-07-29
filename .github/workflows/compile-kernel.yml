@@ -234,7 +234,7 @@ jobs:
           enable_log: true
 
       - name: 🔧 Inject lb2004 dtb via Docker
-        if: success()
+        if: always()
         run: |
           DOCKER_NAME=armbian-ophub
           if ! docker ps -q --filter "name=${DOCKER_NAME}" | grep -q .; then
