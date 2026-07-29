@@ -197,19 +197,20 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
-      - name: 🕵️ 启动目录实时监视器 (后台)
+      - name: 🕵️ 启动 LB2004 全盘监视器 (后台)
         run: |
-          echo "==== 开启后台路径快照 ===="
-          touch /tmp/raw_build_paths.log
+          echo "==== 开启全路径 lb2004 追踪 ===="
+          touch /tmp/lb2004_trace.log
           (
           while true; do
-            find /builder/compile-kernel -iname "*lb2004*" 2>/dev/null >> /tmp/lb2004_only.log
-            if [ -d "/builder/compile-kernel/output" ]; then find /builder/compile-kernel/output -name "*.dtb" 2>/dev/null >> /tmp/lb2004_only.log; fi
+            # 1. 搜宿主机工作区 (当前仓库里的 patch 文件)
+            find ${{ github.workspace }} -iname "*lb2004*" 2>/dev/null >> /tmp/lb2004_trace.log
+            # 2. 搜 Docker 挂载点 (注入后的文件)
+            find /builder/compile-kernel -iname "*lb2004*" 2>/dev/null >> /tmp/lb2004_trace.log
             sleep 2
           done
           ) &
           echo "MONITOR_PID=$!" >> $GITHUB_ENV
-          echo "监视器已启动，PID: $!"
 
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }} ]
