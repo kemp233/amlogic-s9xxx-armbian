@@ -208,7 +208,7 @@ jobs:
 
       - name: 🕵️ 启动后台动态注入器 (监控并抢注)
         run: |
-          DTS_IN_CONTAINER="/opt/kernel/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip"
+          DTS_IN_CONTAINER="/opt/kernel/compile-kernel/kernel/linux-6.1.y-rockchip-main/arch/arm64/boot/dts/rockchip"
           DOCKER_NAME="armbian-ophub"
           echo "==== 动态注入器已启动，等待容器就绪 ===="
           (
