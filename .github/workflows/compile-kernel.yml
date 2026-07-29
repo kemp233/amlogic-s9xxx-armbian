@@ -264,59 +264,56 @@ jobs:
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
-      - name: 📊 编译后全要素链路分析
+      - name: 编译后全要素链路分析
         if: always()
         run: |
-          echo "==== 后置审计 (7 维) ===="
+          echo "==== 编译后全链路分析 (7 维) ===="
           echo ""
-          # ---- A: 内核配置审计 (.config) ----
+          # ---- A: 内核配置审计 ----
           echo "--- [A] 内核配置 (.config) ---"
           KERNEL_DIR=$(find /builder/compile-kernel -maxdepth 4 -name ".config" -path "*/kernel/*" 2>/dev/null | head -1)
           if [ -f "$KERNEL_DIR" ]; then
-            echo ".config 找到: $KERNEL_DIR"
-            grep -E 'CONFIG_ARCH_ROCKCHIP|CONFIG_ARCH_RK3566|lb2004' "$KERNEL_DIR" 2>/dev/null | head -5 || echo "无 lb2004/.config 引用"
+            echo ".config: $KERNEL_DIR"
+            grep -E "CONFIG_ARCH_ROCKCHIP|CONFIG_DTC|CONFIG_CCACHE|CONFIG_ARCH_RK" "$KERNEL_DIR" | head -10
           else
-            echo ".config 不存在(编译已清理)"
+            echo ".config 未找到(已清理)"
           fi
           echo ""
-          # ---- 2: DTC 行为审计 ----
-          echo "--- [B] DTC 编译行为审计 ---"
-          find /builder/compile-kernel -name "*.o" -path "*/arch/arm64/boot/dts/*" 2>/dev/null | wc -l && echo " 个 dtb 文件已在 /builder 生成"
-          find /builder/compile-kernel/output -name "*.dtb" 2>/dev/null | wc -l && echo " 个 dtb 已在 output 目录"
+          # ---- B: DTC 链路行为 ----
+          echo "--- [B] DTC 编译链审计 ---"
+          echo "/builder dtb 总数: $(find /builder/compile-kernel -name "*.o" -path "*/dts/*" 2>/dev/null | wc -l)"
+          echo "output dtb 总数: $(find /builder/compile-kernel/output -name "*.dtb" 2>/dev/null | wc -l)"
           echo ""
-          # ---- 3: ccache 缓存审计 ----
-          echo "--- [C] ccache 缓存统计 ---"
-          if command  ccache 2>/dev/null; then
-            ccache -s 2>/dev/null || echo "ccache 无统计"
-          elif [ -d "$HOME/.ccache" ]; then
-            du -sh "$HOME/.ccache"
-            echo "ccache 存在本地缓存"
-          else
-            echo "ccache 不存在"
-          fi
+          # ---- C: ccache 缓存 ----
+          echo "--- [C] ccache 缓存 ---"
+          ccache -s 2>/dev/null && echo "ccache 正常" || echo "ccache 无"
+          du -sh "$HOME/.ccache" 2>/dev/null && echo "本地缓存存在" || echo "本地缓存为空"
           echo ""
-          # ---- 4: 补丁目录残留状态 ----
-          echo "--- [D] 补丁目录残留 ---"
-          find "${{ github.workspace }}/compile-kernel/tools/patch" -name "*lb2004*" -ls 2>/dev/null || echo "无 lb2004 文件残留"
+          # ---- D: 补丁源代码树 ----
+          echo "--- [D] 补丁源代码树 ---"
+          find "${{ github.workspace }}/compile-kernel/tools/patch" -maxdepth 3 -not -empty 2>/dev/null | sort
           echo ""
-          # ---- 5: 容器内源码树 ----
-          echo "--- [E] 容器内源码树 ---"
-          find /builder -name "*lb2004*" -ls 2>/dev/null || echo "/builder 无 lb2004 文件"
+          # ---- E: 容器源码挂载映射 ----
+          echo "--- [E] 容器挂载映射 ---"
+          find /builder -maxdepth 3 -type d 2>/dev/null | sort | head -50
+          echo "... (总目录数: $(find /builder -type d 2>/dev/null | wc -l))"
           echo ""
-          # ---- 6: 输出目录 ----
-          echo "--- [F] 输出目录 ---"
-          find /opt/kernel/compile-kernel/output -name "*lb2004*" 2>/dev/null || echo "/opt/kernel/output 无 lb2004 文件"
+          # ---- F: 输出制品审计 ----
+          echo "--- [F] 输出制品 ---"
+          find /opt/kernel/compile-kernel/output -name "*.tar.gz" 2>/dev/null && echo "找到打包文件" || echo "无打包文件"
           echo ""
-          # ---- 7: 打包脚本白名单 ----
-          echo "--- [G] 打包脚本白名单 ---"
+          # ---- G: 打包白名单/分类 ----
+          echo "--- [G] 打包分类白名单 ---"
           OUTDIR=$(find /opt/kernel/compile-kernel/output -maxdepth 1 -type d -name "kernel*" 2>/dev/null | head -1)
           if [ -n "$OUTDIR" ]; then
             echo "输出目录: $OUTDIR"
-            find "$OUTDIR" -name "*.dtb" -path "*/rockchip*" 2>/dev/null | sort | head -20
-            echo "rockchip dtb 总数: $(find "$OUTDIR" -name "*.dtb" -path "*/rockchip*" 2>/dev/null | wc -l)"
+            for soc in rockchip amlogic allwinner; do
+              count=$(find "$OUTDIR" -name "*.dtb" -path "*/${soc}*" 2>/dev/null | wc -l)
+              echo "  $soc = ${count} 个 dtb"
+            done
           else
             ls /opt/kernel/compile-kernel/output/ 2>/dev/null | head -10 || echo "output 不可访问"
           fi
           echo ""
-          echo "==== 后置 7 维分析完成 ===="
+          echo "==== 全链路分析完成 ===="
 
