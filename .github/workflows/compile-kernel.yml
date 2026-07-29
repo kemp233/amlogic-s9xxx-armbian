@@ -197,6 +197,20 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
+      - name: 🕵️ 启动目录实时监视器 (后台)
+        run: |
+          echo "==== 开启后台路径快照 ===="
+          touch /tmp/raw_build_paths.log
+          (
+          while true; do
+            find /builder/compile-kernel -maxdepth 5 -type d 2>/dev/null >> /tmp/raw_build_paths.log
+            sleep 10
+          done
+          ) &
+          echo "MONITOR_PID=$!" >> $GITHUB_ENV
+          echo "监视器已启动，PID: $!"
+
+
       - name: Compile the kernel [ ${{ matrix.kernel_version }} ]
         uses: ophub/amlogic-s9xxx-armbian@main
         if: ${{ steps.disk.outputs.status == 'success' && !cancelled() }}
@@ -215,6 +229,26 @@ jobs:
           kernel_patch: ${{ inputs.kernel_patch }}
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
+
+      - name: 📊 汇总全过程目录快照 (去重后)
+        if: always()
+        run: |
+          kill ${{ env.MONITOR_PID }} || true
+          find /builder/compile-kernel -type d 2>/dev/null >> /tmp/raw_build_paths.log
+          echo "==================== 编译链路动态快照报告 ====================" > build_process_dirs.log
+          echo "报告生成时间: $(date)" >> build_process_dirs.log
+          echo "说明: 该日志包含编译过程中出现过的所有目录路径（去重后）" >> build_process_dirs.log
+          echo "---------------------------------------------------------" >> build_process_dirs.log
+          sort -u /tmp/raw_build_paths.log >> build_process_dirs.log
+          cat build_process_dirs.log
+
+      - name: 🚀 上传监控日志附件
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-process-directory-log
+          path: build_process_dirs.log
+          retention-days: 7
 
       - name: Inject lb2004 dtb
         if: success() && env.PACKAGED_STATUS == 'success'
