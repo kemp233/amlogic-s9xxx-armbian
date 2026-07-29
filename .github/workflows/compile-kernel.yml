@@ -197,40 +197,34 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
-      - name: 🕵️ 启动 LB2004 高频哨兵 (监控失效点)
+      - name: 🕵️ 启动后台动态注入器 (监控并抢注)
         run: |
-          TARGET="/builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts"
-          touch /tmp/sentinel_event.log
-          echo "==== 哨兵已就位，开始监控：$TARGET ===="
+          DTS_IN_CONTAINER="/opt/kernel/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip"
+          DOCKER_NAME="armbian-ophub"
+          echo "==== 动态注入器已启动，等待容器就绪 ===="
           (
-          last_state="unknown"
           while true; do
-            if [ -f "$TARGET" ]; then
-              curr_state="EXIST"
-            else
-              curr_state="MISSING"
-            fi
-            if [ "$curr_state" != "$last_state" ]; then
-              ts=$(date +"%H:%M:%S.%3N")
-              echo "[$ts] ** 状态变更: $last_state → $curr_state" >> /tmp/sentinel_event.log
-              if [ "$curr_state" == "EXIST" ]; then
-                ls -la "$TARGET" 2>/dev/null >> /tmp/sentinel_event.log
+            if docker ps --format '{{.Names}}' | grep -q "$DOCKER_NAME"; then
+              if docker exec $DOCKER_NAME ls $DTS_IN_CONTAINER/Makefile >/dev/null 2>&1; then
+                if ! docker exec $DOCKER_NAME grep -q "rk3566-lb2004.dtb" $DTS_IN_CONTAINER/Makefile; then
+                  echo "[$(date +%T)] 🚀 检测到源码就绪，开始执行容器内强制注入..."
+                  docker exec $DOCKER_NAME cp -f /builder/patch-dts/rk3566-lb2004.dts $DTS_IN_CONTAINER/rk3566-lb2004.dts 2>/dev/null || true
+                  docker exec $DOCKER_NAME sed -i '/rk3566-pinenote.dtb/i dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' $DTS_IN_CONTAINER/Makefile 2>/dev/null || true
+                  echo "[$(date +%T)] ✅ 尝试注入完毕"
+                fi
               fi
             fi
-            last_state=$curr_state
             sleep 1
           done
           ) &
-          echo "SENTINEL_PID=$!" >> $GITHUB_ENV
-          echo "哨兵PID=$!"
+          echo "INJECTOR_PID=$!" >> $GITHUB_ENV
+          echo "注入器PID=$!"
 
-      - name: 🚀 编译前物理注入 DTS + Makefile (去 Docker 前)
+      - name: 🚀 挂载 DTS 到容器可见目录
         run: |
-          sudo mkdir -p /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip
-          sudo cp -f compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts \
-            /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts
-          echo "DTS 已注入到挂载点"
-          ls -la /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts
+          sudo mkdir -p /builder/patch-dts
+          sudo cp -f compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts /builder/patch-dts/
+          echo "DTS 已就位: $(ls -la /builder/patch-dts/rk3566-lb2004.dts)"
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
@@ -252,14 +246,11 @@ jobs:
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
-      - name: 📊 分析失效精确位置
+      - name: 📊 验证注入结果
         if: always()
         run: |
-          kill ${{ env.SENTINEL_PID }} 2>/dev/null || true
-          echo "==================== 哨兵追踪报告 ===================="
-          cat /tmp/sentinel_event.log
-          echo "======================================================"
-          echo "当前 DTS 文件状态:"
-          ls -la /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts 2>/dev/null || echo "DTS 文件不存在"
-          echo "当前 Makefile 状态:"
-          grep "lb2004" /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/Makefile 2>/dev/null || echo "Makefile 无 lb2004 或不可用"
+          kill ${{ env.INJECTOR_PID }} 2>/dev/null || true
+          echo "==== 检查最终编译现场 ===="
+          ls -l /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004* 2>/dev/null || echo "文件最终不存在"
+          echo "==== 容器内状态 ===="
+          docker ps -q --filter "name=armbian-ophub" | xargs -I{} docker exec {} ls -la /opt/kernel/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004* 2>/dev/null || echo "容器查询失败或文件不存在"
