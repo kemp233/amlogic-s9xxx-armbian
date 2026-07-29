@@ -210,25 +210,6 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
-      - name: 🕵️ 启动 LB2004 毫秒级探针注入器
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq inotify-tools
-          SRC_DTS="${{ github.workspace }}/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts"
-          echo "==== 探针已启动：正在监控 /builder 挂载点 ===="
-          (
-          inotifywait -m -r /builder -e create -e moved_to --format '%w%f' 2>/dev/null | while read fullpath; do
-            if [[ "$fullpath" == *"/arch/arm64/boot/dts/rockchip/"* ]]; then
-              # 提取当前内核源码根目录权限
-              REAL_DIR="$(dirname "$fullpath")"
-              echo "[$(date +%T)] 🎯 捕获到目标目录: $REAL_DIR"
-              # 暴力注入 DTS 文件（对冲 ophub git checkout）
-              cp -f "$SRC_DTS" "$REAL_DIR/rk3566-lb2004.dts"
-              # 修改 Makefile
-              if [ -f "$REAL_DIR/Makefile" ]; then
-                sed -i '/rk3566-pinenote.dtb/i dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' "$REAL_DIR/Makefile"
-                echo "[$(date +%T)] ✅ 注入完成: Makefile 已更新"
-              echo "审计器已就位"
-
       - name: 📂 补丁链路前置审计
         run: |
           echo "==== 步骤 1：静态参数审计 ===="
