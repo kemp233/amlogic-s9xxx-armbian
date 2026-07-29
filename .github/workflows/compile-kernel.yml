@@ -215,8 +215,8 @@ jobs:
           kernel_patch: ${{ inputs.kernel_patch }}
           kernel_config: ${{ inputs.kernel_config }}
 
-      - name: Inject lb2004 dtb
-        if: success() && env.PACKAGED_STATUS == 'success'
+      - name: Inject lb2004 dtb (DISABLED)
+        if: false
         run: |
           DOCKER_NAME=armbian-ophub
           if ! docker ps -q --filter "name=${DOCKER_NAME}" | grep -q .; then
