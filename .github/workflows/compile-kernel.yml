@@ -264,10 +264,12 @@ jobs:
           find /opt/kernel/compile-kernel/output -name "*lb2004*" -ls 2>/dev/null || echo "/opt/kernel 输出目录无 lb2004 dtb"
           echo ""
           echo "--- [D] 编译日志关键字提取 ---"
-          for log in /builder/compile-kernel/*.log 2>/dev/null; do
+          shopt -s nullglob
+          for log in /builder/compile-kernel/*.log; do
             echo "日志文件: $log"
-            grep -i "lb2004\|patching\|Applying\|dtb-.*rk3566\|DTC.*rockchip\|make.*dtbs\|Hunk\|FAILED" "$log" 2>/dev/null || true
+            grep -i "lb2004\|patching\|Applying\|dtb-.*rk3566\|DTC.*rockchip\|make.*dtbs\|Hunk\|FAILED" "$log" || true
           done
+          shopt -u nullglob
           echo ""
           echo "==== 后置分析完成 ===="
 
