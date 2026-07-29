@@ -199,24 +199,22 @@ jobs:
 
       - name: 🕵️ 启动 LB2004 高频哨兵 (监控失效点)
         run: |
-          TARGET_FILE="/builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts"
+          TARGET="/builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts"
           touch /tmp/sentinel_event.log
-          echo "==== 哨兵已就位，开始监控：$TARGET_FILE ===="
+          echo "==== 哨兵已就位，开始监控：$TARGET ===="
           (
-          last_state="none"
+          last_state="unknown"
           while true; do
-            if [ -f "$TARGET_FILE" ]; then
-              curr_state="exist"
+            if [ -f "$TARGET" ]; then
+              curr_state="EXIST"
             else
-              curr_state="missing"
+              curr_state="MISSING"
             fi
             if [ "$curr_state" != "$last_state" ]; then
-              timestamp=$(date +"%H:%M:%S.%3N")
-              echo "[$timestamp] 文件状态变更: $last_state -> $curr_state" >> /tmp/sentinel_event.log
-              if [ "$curr_state" == "missing" ] && [ "$last_state" == "exist" ]; then
-                echo "--- ！！！报警：文件已被删除 ！！！ ---" >> /tmp/sentinel_event.log
-                echo "最近 10 行系统日志:" >> /tmp/sentinel_event.log
-                dmesg | tail -n 10 >> /tmp/sentinel_event.log
+              ts=$(date +"%H:%M:%S.%3N")
+              echo "[$ts] ** 状态变更: $last_state → $curr_state" >> /tmp/sentinel_event.log
+              if [ "$curr_state" == "EXIST" ]; then
+                ls -la "$TARGET" 2>/dev/null >> /tmp/sentinel_event.log
               fi
             fi
             last_state=$curr_state
@@ -224,14 +222,15 @@ jobs:
           done
           ) &
           echo "SENTINEL_PID=$!" >> $GITHUB_ENV
+          echo "哨兵PID=$!"
 
-      - name: 🚀 强行物理注入并标记现场
+      - name: 🚀 编译前物理注入 DTS + Makefile (去 Docker 前)
         run: |
-          DTS_DIR="/mnt/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip"
-          mkdir -p $DTS_DIR
-          cp -f compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts $DTS_DIR/rk3566-lb2004.dts
-          [ -f "$DTS_DIR/Makefile" ] && sed -i '/rk3566-pinenote.dtb/a \tdtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-lb2004.dtb' $DTS_DIR/Makefile
-          echo "注入完成时间: $(date +"%H:%M:%S.%3N")"
+          sudo mkdir -p /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip
+          sudo cp -f compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts \
+            /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts
+          echo "DTS 已注入到挂载点"
+          ls -la /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
@@ -246,7 +245,7 @@ jobs:
           kernel_sign: ${{ inputs.kernel_sign }}
           kernel_toolchain: ${{ inputs.kernel_toolchain }}
           ccache_clear: ${{ inputs.ccache_clear }}
-          docker_hostpath: /mnt
+          docker_hostpath: /builder
           docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
           auto_patch: true
           kernel_patch: ${{ inputs.kernel_patch }}
@@ -256,27 +255,11 @@ jobs:
       - name: 📊 分析失效精确位置
         if: always()
         run: |
-          kill ${{ env.SENTINEL_PID }} || true
+          kill ${{ env.SENTINEL_PID }} 2>/dev/null || true
           echo "==================== 哨兵追踪报告 ===================="
           cat /tmp/sentinel_event.log
           echo "======================================================"
-          retention-days: 7
-
-      - name: Upload Kernel to Release
-        uses: ophub/upload-to-releases@main
-        if: ${{ env.PACKAGED_STATUS == 'success' && !cancelled() }}
-        with:
-          tag: kernel_stable
-          artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
-          allow_updates: true
-          remove_artifacts: false
-          replaces_artifacts: true
-          make_latest: false
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            - These are Mainline LTS(Long Term Support) kernels that provide `stable` support for Armbian and OpenWrt.
-            - It works with most `Amlogic`, `Rockchip`, and `Allwinner` devices. For specific details, please refer to the instructions on the homepage of repository.
-            - Dedicated BSP kernels for other Rockchip and Allwinner devices can be downloaded from the [ophub/kernel](https://github.com/ophub/kernel) repository.
-            - 这些是主线 LTS（长期支持）内核，为 Armbian 和 OpenWrt 提供`稳定`的支持。
-            - 适用于 `amlogic`，`rockchip`，`allwinner` 的大部分设备，具体可以参考仓库首页的说明。
-            - 其他的 Rockchip 和 Allwinner 设备专用 BSP 内核可以在 [ophub/kernel](https://github.com/ophub/kernel) 仓库里下载使用。
+          echo "当前 DTS 文件状态:"
+          ls -la /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/rk3566-lb2004.dts 2>/dev/null || echo "DTS 文件不存在"
+          echo "当前 Makefile 状态:"
+          grep "lb2004" /builder/compile-kernel/kernel/linux-6.1.y/arch/arm64/boot/dts/rockchip/Makefile 2>/dev/null || echo "Makefile 无 lb2004 或不可用"
