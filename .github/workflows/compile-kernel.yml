@@ -233,7 +233,7 @@ jobs:
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
 
-            - name: 🔧 Inject lb2004 dtb via Docker
+      - name: 🔧 Inject lb2004 dtb via Docker
         if: success()
         run: |
           DOCKER_NAME=armbian-ophub
