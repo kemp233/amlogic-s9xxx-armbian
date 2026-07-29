@@ -210,22 +210,66 @@ jobs:
           restore-keys: |
             kernel-${{ inputs.kernel_toolchain }}-${{ matrix.kernel_version }}-
 
-      - name: 📂 补丁链路前置审计
+      - name: 📂 编译链全要素前置审计
         run: |
-          echo "==== 步骤 1：静态参数审计 ===="
-          echo "kernel_patch = ${{ inputs.kernel_patch }}"
+          echo "==== 1️⃣ 静态参数审计 ===="
+          echo "kernel_patch  = ${{ inputs.kernel_patch }}"
           echo "kernel_source = ${{ inputs.kernel_source }}"
-          echo "kernel_version = ${{ matrix.kernel_version }}"
-          env | grep -E 'INPUT_KERNEL|GITHUB_REF' || true
+          echo "kernel_version= ${{ matrix.kernel_version }}"
+          echo "kernel_package= ${{ inputs.kernel_package }}"
+          echo "kernel_auto   = ${{ inputs.kernel_auto }}"
+          echo "kernel_toolchain = ${{ inputs.kernel_toolchain }}"
+          echo "ccache_clear  = ${{ inputs.ccache_clear }}"
+          echo "auto_patch    = true"
+          echo "docker_image  = ophub/armbian-${{ inputs.docker_image }}:arm64"
           echo ""
-          echo "==== 步骤 2：补丁目录结构 ===="
-          PATCH_DIR="${{ github.workspace }}/compile-kernel/tools/patch"
-          find "$PATCH_DIR" -maxdepth 3 -ls 2>/dev/null || echo "补丁目录不存在"
+          echo "==== 2️⃣ 内核配置审计 (.config 状态) ===="
+          echo "[注意] .config 将在 ophub 容器内生成，此处仅审计本地挂载点"
+          ls -la /builder/compile-kernel/kernel/*/.config 2>/dev/null || echo ".config 尚未生成(容器内)"
           echo ""
-          echo "==== 步骤 3：Docker 环境 ===="
-          docker info --format '{{.ServerVersion}}' 2>/dev/null || echo "Docker 未就绪"
+          echo "==== 3️⃣ DTC 编译工具链审计 ===="
+          which dtc 2>/dev/null && dtc --version 2>/dev/null || echo "dtc 未安装(将使用容器内版本)"
+          echo ""
+          echo "==== 4️⃣ 编译缓存审计 (ccache) ===="
+          if command -v ccache 2>/dev/null; then
+            ccache -s 2>/dev/null || echo "ccache 无统计"
+          else
+            echo "ccache 未安装宿主机(容器内使用)"
+          fi
+          echo ""
+          echo "==== 5️⃣ NPU/VPU 特征审计 ===="
+          echo "备份当前容器内 Makefile/dts 引用"
+          echo "lb2004 DTS 引用的 BSP 节点:"
+          grep -n '&rknpu\|&npu\|&bus_npu\|&vop\|&hdmi\|&pcie30phy\|&pcie3x2\|&can[0-9]' \
+            ${{ github.workspace }}/compile-kernel/tools/patch/linux-6.1.y/rk3566-lb2004.dts 2>/dev/null || echo "DTS 文件不可用"
           echo ""
           echo "==== 前置审计完成 ===="
+
+      - name: 📊 编译后链路失效分析
+        if: always()
+        run: |
+          echo "==== 后置审计 ===="
+          echo ""
+          echo "--- [A] 补丁目录残留状态 ---"
+          PATCH_DIR="${{ github.workspace }}/compile-kernel/tools/patch"
+          find "$PATCH_DIR" -name "*lb2004*" -ls 2>/dev/null || echo "无 lb2004 文件残留"
+          echo ""
+          echo "--- [B] 容器内源码树状态 ---"
+          # 检查 Docker 挂载点
+          find /mnt -name "*lb2004*" -ls 2>/dev/null || echo "/mnt 挂载点无 lb2004 文件"
+          find /builder -name "*lb2004*" -ls 2>/dev/null || echo "/builder 挂载点无 lb2004 文件"
+          echo ""
+          echo "--- [C] 输出目录检查 ---"
+          find /builder/compile-kernel/output -name "*lb2004*" -ls 2>/dev/null || echo "输出目录无 lb2004 dtb"
+          find /opt/kernel/compile-kernel/output -name "*lb2004*" -ls 2>/dev/null || echo "/opt/kernel 输出目录无 lb2004 dtb"
+          echo ""
+          echo "--- [D] 编译日志关键字提取 ---"
+          for log in /builder/compile-kernel/*.log 2>/dev/null; do
+            echo "日志文件: $log"
+            grep -i "lb2004\|patching\|Applying\|dtb-.*rk3566\|DTC.*rockchip\|make.*dtbs\|Hunk\|FAILED" "$log" 2>/dev/null || true
+          done
+          echo ""
+          echo "==== 后置分析完成 ===="
 
       - name: Compile the kernel [ ${{ matrix.kernel_version }}]
         uses: ophub/amlogic-s9xxx-armbian@main
