@@ -91,9 +91,13 @@ on:
         required: false
         default: "compile-kernel/tools/patch"
       kernel_config:
-        description: "Set the path of kernel .config"
+        description: "Select kernel config"
         required: false
-        default: "false"
+        default: "rockchip-bsp-6.1"
+        type: choice
+        options:
+          - false
+          - rockchip-bsp-6.1
 
 env:
   TZ: Etc/UTC
