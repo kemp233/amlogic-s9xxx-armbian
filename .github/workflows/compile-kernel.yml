@@ -13,11 +13,13 @@ on:
       kernel_source:
         description: "Select the kernel source"
         required: false
-        default: "unifreq"
+        default: "unifreq/linux-6.1.y-rockchip"
         type: choice
         options:
           - unifreq
           - ophub
+          - unifreq/linux-6.1.y-rockchip
+
       kernel_version:
         description: "Select kernel version"
         required: false
