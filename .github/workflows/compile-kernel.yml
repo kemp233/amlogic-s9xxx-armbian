@@ -87,7 +87,7 @@ on:
       kernel_patch:
         description: "Set the directory for kernel patches"
         required: false
-        default: "false"
+        default: "compile-kernel/tools/patch"
       kernel_config:
         description: "Set the path of kernel .config"
         required: false
@@ -227,6 +227,7 @@ jobs:
           ccache_clear: ${{ inputs.ccache_clear }}
           docker_hostpath: /builder
           docker_image: ophub/armbian-${{ inputs.docker_image }}:arm64
+          auto_patch: true
           kernel_patch: ${{ inputs.kernel_patch }}
           kernel_config: ${{ inputs.kernel_config }}
           enable_log: true
