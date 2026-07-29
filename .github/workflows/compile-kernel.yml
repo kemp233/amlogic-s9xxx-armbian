@@ -205,7 +205,7 @@ jobs:
           kernel_source: ${{ inputs.kernel_source }}
           kernel_version: ${{ matrix.kernel_version }}
           kernel_auto: ${{ inputs.kernel_auto }}
-          delete_source: ${{ inputs.delete_source }}
+          delete_source: false
           kernel_package: ${{ inputs.kernel_package }}
           kernel_sign: ${{ inputs.kernel_sign }}
           kernel_toolchain: ${{ inputs.kernel_toolchain }}
@@ -223,7 +223,7 @@ jobs:
             echo "Docker container ${DOCKER_NAME} not running, skip"
             exit 0
           fi
-          KERNEL_SRC=$(docker exec ${DOCKER_NAME} sh -c "ls -d /opt/kernel/compile-kernel/kernel/linux-* 2>/dev/null | head -1")
+          KERNEL_SRC=$(docker exec ${DOCKER_NAME} sh -c "find / -maxdepth 5 -name 'Makefile' -path '*/linux-6.1.y/Makefile' 2>/dev/null | head -1 | xargs dirname")
           echo "KERNEL_SRC: ${KERNEL_SRC}"
           # Only inject for 6.1.y kernel
           if echo "${KERNEL_SRC}" | grep -q "linux-6.1.y"; then
