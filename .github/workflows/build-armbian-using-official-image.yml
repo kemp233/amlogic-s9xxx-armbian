@@ -441,6 +441,7 @@ jobs:
           kernel_repo: ${{ inputs.kernel_repo }}
           kernel_usage: ${{ inputs.kernel_usage }}
           armbian_fstype: ${{ inputs.armbian_fstype }}
+          ccache_clear: true
           builder_name: ${{ inputs.builder_name }}
 
       - name: Upload Armbian images to Release
