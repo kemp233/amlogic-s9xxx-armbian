@@ -292,6 +292,9 @@ on:
         options:
           - stable
           - flippy
+          - rk35xx
+          - rk3588
+          - h6
           - beta
       armbian_fstype:
         description: "Select armbian rootfs type."
@@ -413,11 +416,11 @@ jobs:
           ln -sf /builder/build ${{ github.workspace }}/build
           ln -sf /builder/build /home/runner/work/_actions/ophub/amlogic-s9xxx-armbian/main/build
 
-          # Query the latest release asset via GitHub API
+          # Query the latest release asset from ophub upstream (fork has no base releases)
           latest_version=$(curl -s \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              https://api.github.com/repos/${{ github.repository }}/releases?per_page=20 | \
+              https://api.github.com/repos/ophub/amlogic-s9xxx-armbian/releases?per_page=20 | \
               jq -r --arg RTK "Armbian_${{ matrix.release }}_arm64_" \
               --arg BOARD "-trunk_" \
               '[.[] | select(.tag_name | contains($RTK))] |
@@ -460,6 +463,7 @@ jobs:
           kernel_repo: ${{ inputs.kernel_repo }}
           kernel_usage: ${{ inputs.kernel_usage }}
           armbian_fstype: ${{ inputs.armbian_fstype }}
+          armbian_files: custom-armbian-files
           builder_name: ${{ inputs.builder_name }}
 
       - name: Upload Armbian images to Release
