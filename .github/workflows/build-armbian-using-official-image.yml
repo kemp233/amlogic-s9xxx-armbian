@@ -422,12 +422,21 @@ jobs:
         run: |
           A="/home/runner/work/_actions/ophub/amlogic-s9xxx-armbian/main"
           W="${{ github.workspace }}"
+          echo "Injecting model_database.conf..."
           cp -vf "$W/custom-armbian-files/etc/model_database.conf" "$A/build-armbian/armbian-files/common-files/etc/"
+          echo "Injecting rk3566-lb2004.dtb..."
           mkdir -p "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/"
           cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/rk3566-lb2004.dtb" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/"
+          echo "Injecting boot.cmd/scr + armbianEnv.txt..."
           cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/boot.cmd" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/"
           cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/boot.scr" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/"
           cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/armbianEnv.txt" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/"
+          echo "Downloading lb2004 bootloader from kemp233/u-boot..."
+          BL_DIR="$A/build-armbian/u-boot/rockchip/lb2004"
+          mkdir -p "$BL_DIR"
+          curl -fsSL -o "$BL_DIR/idbloader.img" "https://github.com/kemp233/u-boot/raw/main/u-boot/rockchip/lb2004/idbloader.img"
+          curl -fsSL -o "$BL_DIR/u-boot.itb" "https://github.com/kemp233/u-boot/raw/main/u-boot/rockchip/lb2004/u-boot.itb"
+          ls -lh "$BL_DIR/
 
       - name: Rebuild Armbian for target boards
         uses: ophub/amlogic-s9xxx-armbian@main
