@@ -417,6 +417,17 @@ jobs:
           echo "build_tag=Armbian${set_release}_arm64_${{ inputs.armbian_edition }}_$(date +"%Y.%m")" >> ${GITHUB_ENV}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
+      - name: 🔧 Inject lb2004 model conf + dtb into ophub action
+        shell: bash
+        run: |
+          ACTION_DIR="/home/runner/work/_actions/ophub/amlogic-s9xxx-armbian/main"
+          WS="${{ github.workspace }}"
+          echo "Injecting model_database.conf..."
+          cp -vf "$WS/custom-armbian-files/etc/model_database.conf" "$ACTION_DIR/build-armbian/armbian-files/common-files/etc/" 2>&1 || true
+          echo "Injecting rk3566-lb2004.dtb..."
+          mkdir -p "$ACTION_DIR/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/" 2>/dev/null
+          cp -vf "$WS/custom-armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/rk3566-lb2004.dtb" "$ACTION_DIR/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/" 2>&1 || true
+
       - name: Rebuild Armbian for target boards
         uses: ophub/amlogic-s9xxx-armbian@main
         if: ${{ env.ARMBIAN_URL != '' && !cancelled() }}
@@ -429,7 +440,6 @@ jobs:
           kernel_repo: ${{ inputs.kernel_repo }}
           kernel_usage: ${{ inputs.kernel_usage }}
           armbian_fstype: ${{ inputs.armbian_fstype }}
-          armbian_files: custom-armbian-files
           builder_name: ${{ inputs.builder_name }}
 
       - name: Upload Armbian images to Release
