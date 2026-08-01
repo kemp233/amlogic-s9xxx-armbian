@@ -430,7 +430,7 @@ jobs:
           mkdir -p "$BL_DIR"
           curl -fsSL -o "$BL_DIR/idbloader.img" "https://github.com/kemp233/u-boot/raw/main/u-boot/rockchip/lb2004/idbloader.img"
           curl -fsSL -o "$BL_DIR/u-boot.itb" "https://github.com/kemp233/u-boot/raw/main/u-boot/rockchip/lb2004/u-boot.itb"
-          ls -lh "$BL_DIR/
+          ls -lh "$BL_DIR/"
 
       - name: Rebuild Armbian for target boards
         uses: ophub/amlogic-s9xxx-armbian@main
