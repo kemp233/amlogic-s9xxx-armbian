@@ -385,8 +385,8 @@ jobs:
           # Resolve the Armbian image download URL
           armbian_url="${{ inputs.armbian_url }}"
           if  [[ -z "${armbian_url}" ]]; then
-              armbian_url="https://armbian.tnahosting.net/dl/odroidn2/archive/Armbian_26.5.1_Odroidn2_trixie_current_6.18.33_minimal.img.xz"
-              curl -sI "${armbian_url}" >/dev/null 2>&1 ||                 armbian_url="https://armbian.tnahosting.net/dl/odroidn2/archive/Armbian_26.5.1_Odroidn2_trixie_current_6.18.33_minimal.img.xz"
+              armbian_url="https://armbian.tnahosting.net/dl/odroidn2/archive/Armbian_26.5.1_Odroidn2_bookworm_current_6.18.33_minimal.img.xz"
+              curl -sI "${armbian_url}" >/dev/null 2>&1 ||                 armbian_url="https://armbian.tnahosting.net/dl/odroidn2/archive/Armbian_26.5.1_Odroidn2_bookworm_current_6.18.33_minimal.img.xz"
               echo "Using Armbian image: ${armbian_url}"
           fi
           echo "ARMBIAN_URL=${armbian_url}" >> ${GITHUB_ENV}
