@@ -417,16 +417,17 @@ jobs:
           echo "build_tag=Armbian${set_release}_arm64_${{ inputs.armbian_edition }}_$(date +"%Y.%m")" >> ${GITHUB_ENV}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
-      - name: 🔧 Inject lb2004 model conf + dtb into ophub action
+      - name: 🔧 Inject lb2004 into ophub action
         shell: bash
         run: |
-          ACTION_DIR="/home/runner/work/_actions/ophub/amlogic-s9xxx-armbian/main"
-          WS="${{ github.workspace }}"
-          echo "Injecting model_database.conf..."
-          cp -vf "$WS/custom-armbian-files/etc/model_database.conf" "$ACTION_DIR/build-armbian/armbian-files/common-files/etc/" 2>&1 || true
-          echo "Injecting rk3566-lb2004.dtb..."
-          mkdir -p "$ACTION_DIR/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/" 2>/dev/null
-          cp -vf "$WS/custom-armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/rk3566-lb2004.dtb" "$ACTION_DIR/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/" 2>&1 || true
+          A="/home/runner/work/_actions/ophub/amlogic-s9xxx-armbian/main"
+          W="${{ github.workspace }}"
+          cp -vf "$W/custom-armbian-files/etc/model_database.conf" "$A/build-armbian/armbian-files/common-files/etc/"
+          mkdir -p "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/"
+          cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/rk3566-lb2004.dtb" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/dtb/rockchip/"
+          cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/boot.cmd" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/"
+          cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/boot.scr" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/"
+          cp -vf "$W/custom-armbian-files/platform-files/rockchip/bootfs/armbianEnv.txt" "$A/build-armbian/armbian-files/platform-files/rockchip/bootfs/"
 
       - name: Rebuild Armbian for target boards
         uses: ophub/amlogic-s9xxx-armbian@main
