@@ -324,11 +324,8 @@ on:
       docker_ha:
         description: "Pre-pull Home Assistant Docker image into firmware."
         required: false
-        default: "off"
-        type: choice
-        options:
-          - off
-          - on
+        default: false
+        type: boolean
 
 env:
   TZ: Etc/UTC
@@ -460,7 +457,7 @@ jobs:
           echo "status=success" >> ${GITHUB_OUTPUT}
 
       - name: Pre-pull Docker images
-        if: ${{ inputs.docker_ha == 'on' && steps.down.outputs.status == 'success' && !cancelled() }}
+        if: ${{ inputs.docker_ha && steps.down.outputs.status == 'success' && !cancelled() }}
         run: |
           echo "Pre-pulling Home Assistant Docker image..."
           docker pull ghcr.io/home-assistant/home-assistant:stable
