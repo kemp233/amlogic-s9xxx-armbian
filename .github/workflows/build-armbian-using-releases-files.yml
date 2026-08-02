@@ -321,6 +321,14 @@ on:
         options:
           - ophub
           - angel
+      docker_ha:
+        description: "Pre-pull Home Assistant Docker image into firmware."
+        required: false
+        default: "off"
+        type: choice
+        options:
+          - off
+          - on
 
 env:
   TZ: Etc/UTC
@@ -450,6 +458,16 @@ jobs:
 
           echo "build_tag=Armbian_${{ matrix.release }}_arm64_${{ inputs.armbian_edition }}_$(date +"%Y.%m")" >> ${GITHUB_ENV}
           echo "status=success" >> ${GITHUB_OUTPUT}
+
+      - name: Pre-pull Docker images
+        if: ${{ inputs.docker_ha == 'on' && steps.down.outputs.status == 'success' && !cancelled() }}
+        run: |
+          echo "Pre-pulling Home Assistant Docker image..."
+          docker pull ghcr.io/home-assistant/home-assistant:stable
+          mkdir -p custom-armbian-files/rootfs/opt/docker-images
+          docker save ghcr.io/home-assistant/home-assistant:stable | gzip > custom-armbian-files/rootfs/opt/docker-images/ha.tar.gz
+          echo "HA image saved to custom-armbian-files/rootfs/opt/docker-images/ha.tar.gz"
+          ls -lh custom-armbian-files/rootfs/opt/docker-images/
 
       - name: Rebuild Armbian [ ${{ matrix.release }} ]
         uses: ophub/amlogic-s9xxx-armbian@main

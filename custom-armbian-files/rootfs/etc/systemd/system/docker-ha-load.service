@@ -1,0 +1,15 @@
+[Unit]
+Description=Load Home Assistant Docker image
+After=docker.service
+Requires=docker.service
+ConditionPathExists=/opt/docker-images/ha.tar.gz
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/local/bin/docker-ha-load.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
