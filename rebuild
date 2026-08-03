@@ -807,6 +807,11 @@ make_image() {
     # Write the specific bootloader for [ Rockchip ] boxes
     [[ "${PLATFORM}" == "rockchip" ]] && {
         bootloader_path="${uboot_path}/${PLATFORM}/${board}"
+        # LB2004 (rk3566) shares the same boot chain as Inspur-MD1000: reuse its
+        # idbloader.img + u-boot.itb since ophub/u-boot has no rockchip/lb2004/ dir.
+        if [[ "${board}" == "lb2004" && ! -f "${bootloader_path}/${BOOTLOADER_IMG}" ]]; then
+            bootloader_path="${uboot_path}/${PLATFORM}/md1000"
+        fi
         if [[ -n "${BOOTLOADER_IMG}" && -f "${bootloader_path}/${BOOTLOADER_IMG}" ]] &&
             [[ -n "${MAINLINE_UBOOT}" && -f "${bootloader_path}/${MAINLINE_UBOOT}" ]] &&
             [[ -n "${TRUST_IMG}" && -f "${bootloader_path}/${TRUST_IMG}" ]]; then
