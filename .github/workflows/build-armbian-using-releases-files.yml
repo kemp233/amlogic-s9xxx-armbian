@@ -468,7 +468,7 @@ jobs:
           ls -lh custom-armbian-files/rootfs/opt/docker-images/
 
       - name: Rebuild Armbian [ ${{ matrix.release }} ]
-        uses: ophub/amlogic-s9xxx-armbian@main
+        uses: kemp233/amlogic-s9xxx-armbian@main
         if: ${{ steps.down.outputs.status == 'success' && !cancelled() }}
         with:
           build_target: armbian
