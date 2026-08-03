@@ -581,6 +581,13 @@ download_kernel() {
                     # Decompress the kernel files
                     tar -mxzf "${kernel_path}/${key}/${kernel_var}.tar.gz" -C "${kernel_path}/${key}" ||
                         error_msg "[ ${kernel_var} ] kernel decompression failed."
+
+                    # Normalize ophub's '-ophub' top-level dir to the bare version dir
+                    # rebuild expects (e.g. 6.1.118-ophub/ -> 6.1.118/). Inner tarballs
+                    # keep their -ophub names which the boot-6.1.118* glob still matches.
+                    for _d in "${kernel_path}/${key}"/*-ophub; do
+                        [[ -d "${_d}" ]] && mv -f "${_d}" "${kernel_path}/${key}/${kernel_var}"
+                    done
                 else
                     echo -e "${INFO} (${x}.${i}) [ ${key} - ${kernel_var} ] Kernel is in the local directory."
                 fi
