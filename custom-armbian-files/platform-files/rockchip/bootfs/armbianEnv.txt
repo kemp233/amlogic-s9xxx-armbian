@@ -1,6 +1,6 @@
 verbosity=7
 bootlogo=false
-fdtfile=rockchip/rk3566-lb2004.dtb
+fdtfile=rockchip/rk3566-lb2004-bsp6.1.dtb
 rootfstype=ext4
 rootflags=rw,errors=remount-ro
 console=serial

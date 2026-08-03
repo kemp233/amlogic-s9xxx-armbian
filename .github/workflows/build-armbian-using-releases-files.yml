@@ -117,6 +117,7 @@ on:
           - nsy-g68-plus
           - orangepi-3b
           - lb2004
+          - lb2004-rk3566
           - orangepi-5-plus
           - orangepi-5-pro
           - orangepi-5-ultra
@@ -284,6 +285,7 @@ on:
         type: choice
         options:
           - ophub/kernel
+          - kemp233/kernel
       kernel_usage:
         description: "Set the tags of the stable kernel."
         required: false
