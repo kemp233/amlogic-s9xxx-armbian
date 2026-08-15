@@ -1,0 +1,9 @@
+verbosity=1
+bootlogo=false
+console=both
+extraargs=cpuidle.off=1 initcall_blacklist=rknpu_init,rockchip_drm_driver_init,panel_simple_probe,rockchip_edp_driver_init,rockchip_vop_init,rockchip_vop2_init
+overlay_prefix=rk3568
+fdtfile=rockchip/rk3568-z96a-laptop-v2.dtb
+rootdev=/dev/mmcblk0p2
+rootfstype=ext4
+extraboardargs=net.ifnames=0

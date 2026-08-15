@@ -1,0 +1,19 @@
+config:
+  name: rk35xx-5.10
+  kind: kernel
+  type: vendor
+  branch: rk-5.10-rkr6
+  last-known-good-tag: v5.10.160
+
+  dts-directories:
+    - { source: "dt", target: "arch/arm64/boot/dts/rockchip" }
+
+  auto-patch-dt-makefile:
+    - { incremental: true, directory: "arch/arm64/boot/dts/rockchip", config-var: "CONFIG_ARCH_ROCKCHIP" }
+
+  patches-to-git:
+    do-not-commit-files:
+      - "MAINTAINERS"
+      - "Documentation/devicetree/bindings/arm/rockchip.yaml"
+    do-not-commit-regexes:
+      - "^arch/([a-zA-Z0-9]+)/boot/dts/([a-zA-Z0-9]+)/Makefile$"

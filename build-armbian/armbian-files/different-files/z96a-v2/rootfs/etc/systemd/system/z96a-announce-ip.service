@@ -1,0 +1,12 @@
+[Unit]
+Description=Announce IP Address on Serial Console
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for i in $(seq 1 30); do IP=$(ip addr show wlan0 2>/dev/null | grep "inet " | awk "{print \$2}" | cut -d/ -f1); if [ -n "$IP" ]; then echo "===========================================" > /dev/ttyFIQ0; echo " Z96A V2 ONLINE - IP: $IP" > /dev/ttyFIQ0; echo " SSH: ssh root@$IP" > /dev/ttyFIQ0; echo "===========================================" > /dev/ttyFIQ0; break; fi; sleep 2; done'
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

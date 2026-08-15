@@ -1,0 +1,12 @@
+[Unit]
+Description=amixer_enspk1 Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/amixer -c 1 set 'Playback Path' SPK
+RemainAfterExit=true
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

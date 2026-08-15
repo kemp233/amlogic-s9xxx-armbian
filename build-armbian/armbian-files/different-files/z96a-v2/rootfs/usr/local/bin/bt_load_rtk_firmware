@@ -1,0 +1,7 @@
+#!/bin/bash
+# Load RTL8821CS BT firmware
+/usr/local/bin/rtk_hciattach -n -s 115200 /dev/ttyS1 rtk_h5 &
+sleep 2
+/usr/bin/hciattach /dev/ttyS1 rtk_h5 1500000 flow
+sleep 1
+/usr/bin/hciconfig hci0 up

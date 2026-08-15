@@ -1,0 +1,4 @@
+# /etc/balance_irq
+# 用于中断设备的负载均衡
+eth0            3
+xhci-hcd:usb3   2
