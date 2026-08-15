@@ -195,13 +195,20 @@ runs:
             fi
 
             # Custom Armbian rebuild files
+            # Must run from action_path: previous steps cd into build/output/images.
+            cd ${{ github.action_path }}
             if [[ -n "${{ inputs.armbian_files }}" && "${{ inputs.armbian_files }}" != "false" ]]; then
                 echo -e "Adding custom Armbian rebuild files..."
                 copy_from_path="${{ inputs.armbian_files }}"
                 copy_from_path="${copy_from_path%/}"
                 [[ "${copy_from_path}" != /* ]] && copy_from_path="${{ github.workspace }}/${copy_from_path}"
-                copy_to_path="build-armbian/armbian-files/common-files"
-                cp -avf --no-preserve=ownership "${copy_from_path}/." -t "${copy_to_path}/" || true
+                copy_to_path="${{ github.action_path }}/build-armbian/armbian-files/common-files"
+                mkdir -p "${copy_to_path}"
+                if [[ ! -d "${copy_from_path}" ]]; then
+                    echo -e "Custom Armbian files path missing: [ ${copy_from_path} ]"
+                    exit 1
+                fi
+                cp -avf --no-preserve=ownership "${copy_from_path}/." -t "${copy_to_path}/"
             else
                 echo -e "Using the default Armbian rebuild files."
             fi
