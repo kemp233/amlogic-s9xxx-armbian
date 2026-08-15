@@ -248,6 +248,7 @@ on:
           - zcube1-max
           - zk-r39a
           - zysj
+          - z96a-v2
       armbian_kernel:
         description: "Select kernel version."
         required: false
